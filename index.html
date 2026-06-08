@@ -96,26 +96,51 @@
         position: absolute;
         top: 100%; left: 0; right: 0;
         background: var(--ink);
-        padding: 1rem;
+        padding: 1.5rem;
         border-bottom: 3px solid var(--red-string);
+        z-index: 1000;
       }
       .nav-links.active { display: flex !important; }
-      .nav-links a { margin: 0.5rem 0; font-size: 1rem; }
+      .nav-links a { margin: 0.8rem 0; font-size: 1.1rem; margin-left: 0; }
       
-      .hero-paper { padding: 2rem 1.5rem !important; margin: 0 1rem; }
-       .scatter-note { display: none; } /* Hide scattered notes on mobile for clarity */
-       
-       .section-title { font-size: 2rem !important; }
-       .cta-title { font-size: 2rem !important; }
-       
-       .leaderboard-card, .hero-paper, .rule-card {
-         transform: none !important; /* Remove rotations on mobile */
-       }
-       
-       .modal-card {
-         padding: 1.5rem !important;
-       }
-     }
+      #hero { padding-top: 4rem; padding-bottom: 4rem; height: auto; min-height: 100vh; }
+      .hero-main { padding: 0 1rem; }
+      .hero-paper { 
+        padding: 2.5rem 1.2rem !important; 
+        margin: 0; 
+        width: 100%; 
+        max-width: 100%;
+        box-sizing: border-box;
+      }
+      .hero-title { font-size: clamp(2.2rem, 10vw, 3.5rem); }
+      .hero-year { font-size: 1.8rem; }
+      .hero-sub { font-size: 0.8rem; letter-spacing: 1px; }
+      .btn-primary-ctf, .btn-outline-ctf { 
+        width: 100%; 
+        margin: 0.5rem 0; 
+        padding: 0.75rem 1rem; 
+      }
+      
+      .scatter-note, .strings-svg { display: none !important; } /* Hide heavy visuals on mobile */
+      
+      .section-title { font-size: 1.8rem !important; }
+      .cta-title { font-size: 1.8rem !important; }
+      
+      .leaderboard-card, .hero-paper, .rule-card {
+        transform: none !important; /* Remove rotations on mobile to prevent overflow */
+        margin-bottom: 1rem;
+      }
+      
+      .modal-card {
+        padding: 1.5rem !important;
+        width: 90vw;
+      }
+      
+      /* Fix potential overflow from large elements */
+      .container { overflow: hidden; }
+      .row { margin-left: 0; margin-right: 0; }
+      .col-md-4, .col-lg-6 { padding-left: 0.5rem; padding-right: 0.5rem; }
+    }
 
     /* ── MODAL ── */
     .modal-overlay {
