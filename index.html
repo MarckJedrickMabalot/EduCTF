@@ -1,0 +1,901 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>EduCTF — Digital Detectives Wanted</title>
+  <link href="https://fonts.googleapis.com/css2?family=Special+Elite&family=Courier+Prime:ital,wght@0,400;0,700;1,400&family=Oswald:wght@400;600;700&display=swap" rel="stylesheet"/>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet"/>
+  <style>
+    :root {
+      --cork: #c8955c;
+      --cork-dark: #a0714a;
+      --paper: #f5eed8;
+      --paper-aged: #e8d9b0;
+      --paper-dark: #d4c08a;
+      --ink: #1a1008;
+      --ink-faded: #3d2b1a;
+      --red-string: #8b1a1a;
+      --red-accent: #c0392b;
+      --stamp-green: #2d5a27;
+      --stamp-red: #7a1a1a;
+      --tape: rgba(255,245,180,0.7);
+      --shadow: rgba(0,0,0,0.35);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background-color: #2a1a0a;
+      font-family: 'Courier Prime', monospace;
+      color: var(--ink);
+      overflow-x: hidden;
+      cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='28' viewBox='0 0 20 28'%3E%3Ccircle cx='8' cy='8' r='6' fill='none' stroke='%238b1a1a' stroke-width='2'/%3E%3Cline x1='12' y1='12' x2='19' y2='19' stroke='%238b1a1a' stroke-width='2.5' stroke-linecap='round'/%3E%3C/svg%3E"), crosshair;
+    }
+
+    /* ── NOISE OVERLAY ── */
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+      pointer-events: none; z-index: 9999; opacity: 0.5;
+    }
+
+    /* ── NAVBAR ── */
+    nav {
+      background: var(--ink);
+      border-bottom: 3px solid var(--red-string);
+      padding: 0.75rem 2rem;
+      position: sticky; top: 0; z-index: 100;
+    }
+    .nav-brand {
+      font-family: 'Special Elite', serif;
+      font-size: 1.4rem;
+      color: var(--paper);
+      letter-spacing: 2px;
+      text-decoration: none;
+    }
+    .nav-brand span { color: var(--red-accent); }
+    
+    .nav-toggle {
+      display: none;
+      background: none;
+      border: 1px solid var(--red-accent);
+      color: var(--paper);
+      padding: 0.25rem 0.5rem;
+      cursor: pointer;
+    }
+
+    .nav-links a {
+      font-family: 'Courier Prime', monospace;
+      font-size: 0.85rem;
+      color: var(--paper-aged);
+      text-decoration: none;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      margin-left: 2rem;
+      transition: color 0.2s;
+      position: relative;
+    }
+    .nav-links a::after {
+      content: '';
+      position: absolute; bottom: -2px; left: 0; right: 0;
+      height: 1px; background: var(--red-accent);
+      transform: scaleX(0); transition: transform 0.2s;
+    }
+    .nav-links a:hover { color: var(--paper); }
+    .nav-links a:hover::after { transform: scaleX(1); }
+
+    @media (max-width: 768px) {
+      nav { padding: 0.75rem 1rem; }
+      .nav-toggle { display: block; }
+      .nav-links {
+        display: none !important;
+        flex-direction: column;
+        position: absolute;
+        top: 100%; left: 0; right: 0;
+        background: var(--ink);
+        padding: 1rem;
+        border-bottom: 3px solid var(--red-string);
+      }
+      .nav-links.active { display: flex !important; }
+      .nav-links a { margin: 0.5rem 0; font-size: 1rem; }
+      
+      .hero-paper { padding: 2rem 1.5rem !important; margin: 0 1rem; }
+       .scatter-note { display: none; } /* Hide scattered notes on mobile for clarity */
+       
+       .section-title { font-size: 2rem !important; }
+       .cta-title { font-size: 2rem !important; }
+       
+       .leaderboard-card, .hero-paper, .rule-card {
+         transform: none !important; /* Remove rotations on mobile */
+       }
+       
+       .modal-card {
+         padding: 1.5rem !important;
+       }
+     }
+
+    /* ── MODAL ── */
+    .modal-overlay {
+      position: fixed; inset: 0;
+      background: rgba(10,5,2,0.85);
+      z-index: 200; display: none;
+      align-items: center; justify-content: center;
+    }
+    .modal-overlay.active { display: flex; }
+    .modal-card {
+      background: var(--paper);
+      width: 420px; max-width: 95vw;
+      padding: 2.5rem;
+      position: relative;
+      box-shadow: 8px 8px 0 var(--ink), 4px 4px 30px rgba(0,0,0,0.6);
+      transform: rotate(-1deg);
+    }
+    .modal-card::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: repeating-linear-gradient(transparent, transparent 27px, #c9b88a55 28px);
+      pointer-events: none;
+    }
+    .modal-tape {
+      position: absolute; top: -14px; left: 50%; transform: translateX(-50%);
+      width: 80px; height: 28px;
+      background: var(--tape);
+      border: 1px solid rgba(200,180,100,0.4);
+    }
+    .modal-title {
+      font-family: 'Special Elite', serif;
+      font-size: 1.6rem;
+      color: var(--ink);
+      margin-bottom: 0.3rem;
+      position: relative; z-index: 1;
+    }
+    .modal-sub {
+      font-size: 0.75rem;
+      color: var(--ink-faded);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      margin-bottom: 1.5rem;
+      position: relative; z-index: 1;
+    }
+    .modal-card input {
+      display: block; width: 100%;
+      background: transparent;
+      border: none; border-bottom: 1.5px solid var(--ink-faded);
+      font-family: 'Courier Prime', monospace;
+      font-size: 0.95rem;
+      color: var(--ink);
+      padding: 0.5rem 0;
+      margin-bottom: 1.2rem;
+      position: relative; z-index: 1;
+      outline: none;
+    }
+    .modal-card input::placeholder { color: #a09070; }
+    .btn-stamp {
+      display: inline-block;
+      font-family: 'Oswald', sans-serif;
+      font-size: 0.9rem;
+      font-weight: 700;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      background: var(--stamp-red);
+      color: var(--paper);
+      border: 2px solid var(--ink);
+      padding: 0.6rem 1.8rem;
+      cursor: pointer;
+      transition: all 0.15s;
+      position: relative; z-index: 1;
+    }
+    .btn-stamp:hover {
+      background: var(--ink);
+      transform: translate(-2px,-2px);
+      box-shadow: 3px 3px 0 var(--red-string);
+    }
+    .modal-toggle {
+      font-size: 0.78rem;
+      color: var(--ink-faded);
+      margin-top: 1rem;
+      position: relative; z-index: 1;
+    }
+    .modal-toggle a {
+      color: var(--red-accent);
+      cursor: pointer;
+      text-decoration: underline;
+    }
+    .modal-close {
+      position: absolute; top: 1rem; right: 1rem;
+      background: none; border: none;
+      font-size: 1.2rem; cursor: pointer;
+      color: var(--ink-faded);
+      z-index: 2;
+    }
+
+    /* ── HERO ── */
+    #hero {
+      min-height: 100vh;
+      background:
+        radial-gradient(ellipse at 20% 80%, rgba(139,26,26,0.15) 0%, transparent 60%),
+        radial-gradient(ellipse at 80% 20%, rgba(60,40,20,0.3) 0%, transparent 50%),
+        url("data:image/svg+xml,%3Csvg width='60' height='60' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='60' height='60' fill='%23c8955c'/%3E%3Ccircle cx='30' cy='30' r='28' fill='%23c08850' opacity='0.3'/%3E%3C/svg%3E") center/120px,
+        var(--cork);
+      position: relative;
+      display: flex; align-items: center;
+      overflow: hidden;
+    }
+
+    /* Pinned notes scattered */
+    .pin {
+      position: absolute;
+      width: 18px; height: 18px;
+      background: radial-gradient(circle at 35% 35%, #ff6666, var(--red-string));
+      border-radius: 50%;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.5), inset 0 1px 2px rgba(255,255,255,0.3);
+      z-index: 10;
+    }
+
+    .scatter-note {
+      position: absolute;
+      background: var(--paper);
+      font-family: 'Courier Prime', monospace;
+      font-size: 0.75rem;
+      color: var(--ink-faded);
+      padding: 1rem 1.2rem;
+      box-shadow: 4px 4px 12px var(--shadow);
+      max-width: 160px;
+      line-height: 1.6;
+    }
+    .scatter-note.lined::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: repeating-linear-gradient(transparent, transparent 20px, #c9b88a66 21px);
+    }
+    .scatter-note span { position: relative; z-index: 1; }
+
+    .n1 { top: 8%; left: 3%; transform: rotate(-3deg); }
+    .n2 { top: 15%; right: 4%; transform: rotate(2deg); }
+    .n3 { bottom: 20%; left: 5%; transform: rotate(1.5deg); }
+    .n4 { bottom: 10%; right: 3%; transform: rotate(-2.5deg); }
+    .n5 { top: 45%; left: 1%; transform: rotate(4deg); }
+
+    /* Red strings */
+    .strings-svg {
+      position: absolute; inset: 0;
+      width: 100%; height: 100%;
+      pointer-events: none; z-index: 2;
+    }
+
+    .hero-main {
+      position: relative; z-index: 5;
+      text-align: center;
+      width: 100%;
+    }
+
+    .hero-paper {
+      display: inline-block;
+      background: var(--paper);
+      padding: 3rem 4rem;
+      position: relative;
+      box-shadow: 6px 6px 0 var(--cork-dark), 2px 2px 40px rgba(0,0,0,0.4);
+      transform: rotate(-0.5deg);
+      max-width: 700px;
+    }
+    .hero-paper::after {
+      content: '';
+      position: absolute; inset: 0;
+      background: repeating-linear-gradient(transparent, transparent 31px, #c9b88a44 32px);
+      pointer-events: none;
+    }
+
+    .hero-stamp {
+      position: absolute; top: -20px; left: 50%;
+      transform: translateX(-50%) rotate(-2deg);
+      background: var(--stamp-red);
+      color: var(--paper);
+      font-family: 'Oswald', sans-serif;
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      padding: 4px 20px;
+      border: 2px solid rgba(255,255,255,0.2);
+      z-index: 6;
+    }
+
+    .hero-eyebrow {
+      font-family: 'Courier Prime', monospace;
+      font-size: 0.8rem;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      color: var(--ink-faded);
+      margin-bottom: 0.5rem;
+      position: relative; z-index: 1;
+    }
+
+    .hero-title {
+      font-family: 'Special Elite', serif;
+      font-size: clamp(3rem, 8vw, 5.5rem);
+      color: var(--ink);
+      line-height: 1;
+      position: relative; z-index: 1;
+      margin-bottom: 0.2rem;
+    }
+    .hero-title .ctf { color: var(--red-accent); }
+    .hero-year {
+      font-family: 'Courier Prime', monospace;
+      font-size: clamp(1.8rem, 4vw, 3rem);
+      color: var(--red-string);
+      font-style: italic;
+      position: relative; z-index: 1;
+      margin-bottom: 1rem;
+    }
+    .hero-sub {
+      font-size: 0.9rem;
+      color: var(--ink-faded);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      margin-bottom: 2rem;
+      position: relative; z-index: 1;
+    }
+    .hero-actions { position: relative; z-index: 1; }
+
+    .btn-primary-ctf {
+      font-family: 'Oswald', sans-serif;
+      font-size: 1rem;
+      font-weight: 700;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      background: var(--ink);
+      color: var(--paper);
+      border: 2px solid var(--ink);
+      padding: 0.8rem 2.5rem;
+      text-decoration: none;
+      display: inline-block;
+      transition: all 0.15s;
+      margin: 0.4rem;
+    }
+    .btn-primary-ctf:hover {
+      background: var(--red-string);
+      border-color: var(--red-string);
+      color: var(--paper);
+      transform: translate(-2px, -2px);
+      box-shadow: 4px 4px 0 var(--ink);
+    }
+    .btn-outline-ctf {
+      font-family: 'Oswald', sans-serif;
+      font-size: 1rem;
+      font-weight: 700;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      background: transparent;
+      color: var(--ink);
+      border: 2px solid var(--ink);
+      padding: 0.8rem 2.5rem;
+      text-decoration: none;
+      display: inline-block;
+      transition: all 0.15s;
+      margin: 0.4rem;
+      cursor: pointer;
+    }
+    .btn-outline-ctf:hover {
+      background: var(--ink);
+      color: var(--paper);
+      transform: translate(-2px, -2px);
+      box-shadow: 4px 4px 0 var(--cork-dark);
+    }
+
+    /* ── SECTION WRAPPER ── */
+    .section-cork {
+      background:
+        radial-gradient(ellipse at 50% 0%, rgba(139,26,26,0.08) 0%, transparent 70%),
+        url("data:image/svg+xml,%3Csvg width='60' height='60' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='60' height='60' fill='%23c8955c'/%3E%3C/svg%3E") center/80px,
+        var(--cork-dark);
+      padding: 5rem 0;
+    }
+
+    .section-header {
+      text-align: center;
+      margin-bottom: 3rem;
+    }
+    .section-label {
+      font-family: 'Courier Prime', monospace;
+      font-size: 0.75rem;
+      letter-spacing: 5px;
+      text-transform: uppercase;
+      color: rgba(245,238,216,0.7);
+      margin-bottom: 0.5rem;
+    }
+    .section-title {
+      font-family: 'Special Elite', serif;
+      font-size: 2.8rem;
+      color: var(--paper);
+      text-shadow: 2px 2px 0 var(--ink);
+    }
+    .section-divider {
+      width: 60px; height: 3px;
+      background: var(--red-string);
+      margin: 1rem auto;
+    }
+
+    /* ── RULES CARDS ── */
+    .rule-card {
+      background: var(--paper);
+      padding: 1.8rem;
+      position: relative;
+      box-shadow: 4px 4px 0 var(--cork-dark), 2px 2px 20px rgba(0,0,0,0.3);
+      height: 100%;
+      transition: transform 0.2s;
+    }
+    .rule-card:hover {
+      transform: translate(-2px,-3px) rotate(0.3deg);
+      box-shadow: 6px 6px 0 var(--ink), 2px 2px 20px rgba(0,0,0,0.3);
+    }
+    .rule-card::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: repeating-linear-gradient(transparent, transparent 26px, #c9b88a55 27px);
+      pointer-events: none;
+    }
+    .rule-number {
+      font-family: 'Special Elite', serif;
+      font-size: 3rem;
+      color: rgba(139,26,26,0.15);
+      position: absolute; top: 0.5rem; right: 1rem;
+      line-height: 1;
+    }
+    .rule-icon {
+      font-size: 1.8rem;
+      color: var(--red-string);
+      margin-bottom: 0.8rem;
+      position: relative; z-index: 1;
+    }
+    .rule-title {
+      font-family: 'Oswald', sans-serif;
+      font-size: 1.1rem;
+      font-weight: 600;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--ink);
+      margin-bottom: 0.5rem;
+      position: relative; z-index: 1;
+    }
+    .rule-text {
+      font-size: 0.85rem;
+      color: var(--ink-faded);
+      line-height: 1.7;
+      position: relative; z-index: 1;
+    }
+    .rule-tape {
+      position: absolute; top: -12px; left: 50%;
+      transform: translateX(-50%);
+      width: 60px; height: 24px;
+      background: var(--tape);
+      border: 1px solid rgba(200,180,80,0.3);
+    }
+
+    /* ── CATEGORIES ── */
+    .cat-badge {
+      background: var(--paper-aged);
+      border: 1.5px solid var(--ink-faded);
+      color: var(--ink);
+      font-family: 'Oswald', sans-serif;
+      font-size: 0.8rem;
+      font-weight: 600;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      padding: 0.5rem 1.2rem;
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      margin: 0.3rem;
+      position: relative;
+      box-shadow: 2px 2px 0 var(--ink-faded);
+      transition: all 0.15s;
+      text-decoration: none;
+    }
+    .cat-badge:hover {
+      background: var(--ink);
+      color: var(--paper);
+      transform: translate(-1px,-2px);
+      box-shadow: 3px 3px 0 var(--red-string);
+    }
+
+    /* ── SCOREBOARD PREVIEW ── */
+    .leaderboard-card {
+      background: var(--paper);
+      padding: 2rem;
+      position: relative;
+      box-shadow: 6px 6px 0 var(--ink), 2px 2px 30px rgba(0,0,0,0.4);
+      transform: rotate(0.5deg);
+    }
+    .leaderboard-card::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: repeating-linear-gradient(transparent, transparent 26px, #c9b88a55 27px);
+      pointer-events: none;
+    }
+    .lb-header {
+      font-family: 'Special Elite', serif;
+      font-size: 1.4rem;
+      color: var(--ink);
+      border-bottom: 2px solid var(--ink);
+      padding-bottom: 0.5rem;
+      margin-bottom: 1rem;
+      position: relative; z-index: 1;
+    }
+    .lb-row {
+      display: flex; align-items: center; gap: 1rem;
+      padding: 0.5rem 0;
+      border-bottom: 1px dashed var(--paper-dark);
+      font-size: 0.88rem;
+      position: relative; z-index: 1;
+    }
+    .lb-rank {
+      font-family: 'Oswald', sans-serif;
+      font-weight: 700;
+      width: 28px;
+      color: var(--red-string);
+    }
+    .lb-name { flex: 1; font-weight: bold; color: var(--ink); }
+    .lb-score {
+      font-family: 'Oswald', sans-serif;
+      font-weight: 600;
+      color: var(--stamp-green);
+    }
+    .lb-badge {
+      font-size: 0.7rem;
+      background: var(--stamp-red);
+      color: var(--paper);
+      padding: 2px 7px;
+      font-family: 'Oswald', sans-serif;
+      letter-spacing: 1px;
+    }
+
+    /* ── CTA ── */
+    .cta-section {
+      background: var(--ink);
+      padding: 5rem 0;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .cta-section::before {
+      content: 'WANTED';
+      position: absolute;
+      font-family: 'Oswald', sans-serif;
+      font-size: 20vw;
+      font-weight: 900;
+      color: rgba(255,255,255,0.02);
+      top: 50%; left: 50%;
+      transform: translate(-50%,-50%);
+      letter-spacing: 10px;
+      pointer-events: none;
+    }
+    .cta-title {
+      font-family: 'Special Elite', serif;
+      font-size: 3rem;
+      color: var(--paper);
+      margin-bottom: 1rem;
+    }
+    .cta-sub {
+      font-family: 'Courier Prime', monospace;
+      font-size: 1rem;
+      color: rgba(245,238,216,0.6);
+      margin-bottom: 2.5rem;
+      letter-spacing: 2px;
+    }
+
+    /* ── FOOTER ── */
+    footer {
+      background: #100a04;
+      border-top: 3px solid var(--red-string);
+      padding: 2rem;
+      text-align: center;
+    }
+    .footer-brand {
+      font-family: 'Special Elite', serif;
+      font-size: 1.2rem;
+      color: var(--paper-aged);
+      margin-bottom: 0.3rem;
+    }
+    .footer-sub {
+      font-size: 0.75rem;
+      color: rgba(245,238,216,0.35);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+
+    /* Animations */
+    @keyframes fadeSlide {
+      from { opacity: 0; transform: translateY(20px) rotate(-0.5deg); }
+      to { opacity: 1; transform: translateY(0) rotate(-0.5deg); }
+    }
+    .hero-paper { animation: fadeSlide 0.8s ease forwards; }
+
+    @keyframes flicker { 0%,100%{opacity:1} 50%{opacity:0.92} 75%{opacity:0.96} }
+    .flicker { animation: flicker 3s ease-in-out infinite; }
+  </style>
+</head>
+<body>
+
+<!-- LOGIN/REGISTER MODAL -->
+<div class="modal-overlay" id="authModal">
+  <div class="modal-card">
+    <div class="modal-tape"></div>
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <div id="loginForm">
+      <p class="modal-title">Agent Login</p>
+      <p class="modal-sub">// Authorized Personnel Only</p>
+      <input type="text" placeholder="Agent Codename" />
+      <input type="password" placeholder="Passphrase" />
+      <button class="btn-stamp" onclick="handleLogin()">Authenticate</button>
+      <p class="modal-toggle">No account? <a onclick="toggleForm('register')">Register as new agent →</a></p>
+    </div>
+    <div id="registerForm" style="display:none;">
+      <p class="modal-title">New Agent</p>
+      <p class="modal-sub">// Enlist Now</p>
+      <input type="text" placeholder="Full Name" />
+      <input type="text" placeholder="Agent Codename" />
+      <input type="email" placeholder="Email Address" />
+      <input type="password" placeholder="Passphrase" />
+      <button class="btn-stamp" onclick="handleRegister()">Enlist</button>
+      <p class="modal-toggle">Already enlisted? <a onclick="toggleForm('login')">← Sign in</a></p>
+    </div>
+  </div>
+</div>
+
+<!-- NAVBAR -->
+<nav class="d-flex align-items-center justify-content-between">
+  <a href="index.html" class="nav-brand">Edu<span>CTF</span></a>
+  <button class="nav-toggle" onclick="toggleNav()">
+    <i class="bi bi-list"></i>
+  </button>
+  <div class="nav-links d-flex align-items-center" id="navLinks">
+    <a href="#rules">Rules</a>
+    <a href="#categories">Categories</a>
+    <a href="game.html">Challenges</a>
+    <a href="admin.html">Admin</a>
+    <a href="#" onclick="openModal()" style="color: var(--red-accent); border:1px solid var(--red-accent); padding:4px 14px; font-size:0.8rem; letter-spacing:2px; text-transform:uppercase; font-family:'Oswald',sans-serif; font-weight:600; text-decoration:none; transition:all 0.15s;">Login</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section id="hero">
+  <!-- Scattered notes -->
+  <div class="scatter-note lined n1">
+    <div class="pin" style="top:-9px;left:50%;transform:translateX(-50%)"></div>
+    <span>SYSTEM BREACH<br>ACCESS DENIED<br>— threat detected</span>
+  </div>
+  <div class="scatter-note n2" style="background:#fffde0;">
+    <div class="pin" style="top:-9px;left:50%;transform:translateX(-50%)"></div>
+    <span>ONE GOAL.<br>ONE FLAG.<br>Find it.</span>
+  </div>
+  <div class="scatter-note lined n3">
+    <div class="pin" style="top:-9px;left:50%;transform:translateX(-50%)"></div>
+    <span>Solve. Capture.<br>Submit.<br>Win.</span>
+  </div>
+  <div class="scatter-note n4" style="background:#fffde0; transform:rotate(2deg);">
+    <div class="pin" style="top:-9px;left:50%;transform:translateX(-50%)"></div>
+    <span>WHO WILL<br>CRACK<br><strong style="color:var(--red-accent)">THE CODE?</strong></span>
+  </div>
+  <div class="scatter-note n5" style="font-size:0.65rem; max-width:130px;">
+    <div class="pin" style="top:-9px;left:50%;transform:translateX(-50%)"></div>
+    <span>Digital Detectives<br><strong>WANTED</strong></span>
+  </div>
+
+  <!-- Red string SVG -->
+  <svg class="strings-svg" viewBox="0 0 1200 600" preserveAspectRatio="none">
+    <line x1="130" y1="80" x2="560" y2="280" stroke="#8b1a1a" stroke-width="1" opacity="0.5"/>
+    <line x1="1080" y1="120" x2="640" y2="280" stroke="#8b1a1a" stroke-width="1" opacity="0.5"/>
+    <line x1="80" y1="400" x2="540" y2="310" stroke="#8b1a1a" stroke-width="1" opacity="0.4"/>
+    <line x1="1100" y1="480" x2="660" y2="320" stroke="#8b1a1a" stroke-width="1" opacity="0.4"/>
+    <circle cx="130" cy="80" r="4" fill="#8b1a1a" opacity="0.7"/>
+    <circle cx="1080" cy="120" r="4" fill="#8b1a1a" opacity="0.7"/>
+    <circle cx="80" cy="400" r="4" fill="#8b1a1a" opacity="0.7"/>
+    <circle cx="1100" cy="480" r="4" fill="#8b1a1a" opacity="0.7"/>
+  </svg>
+
+  <div class="hero-main">
+    <div class="hero-paper flicker">
+      <div class="hero-stamp">COMSOC Hacking Competition</div>
+      <p class="hero-eyebrow">Polytechnic University of the Philippines</p>
+      <h1 class="hero-title">Edu<span class="ctf">CTF</span></h1>
+      <p class="hero-year">2026</p>
+      <p class="hero-sub">Capture The Flag — Digital Detectives Wanted</p>
+      <div class="hero-actions">
+        <a href="game.html" class="btn-primary-ctf">Enter the Case</a>
+        <button class="btn-outline-ctf" onclick="openModal()">Sign In</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- RULES -->
+<section class="section-cork" id="rules">
+  <div class="container">
+    <div class="section-header">
+      <p class="section-label">— Briefing Document —</p>
+      <h2 class="section-title">Rules of Engagement</h2>
+      <div class="section-divider"></div>
+    </div>
+    <div class="row g-4">
+      <div class="col-md-4">
+        <div class="rule-card">
+          <div class="rule-tape"></div>
+          <span class="rule-number">01</span>
+          <div class="rule-icon"><i class="bi bi-flag-fill"></i></div>
+          <p class="rule-title">Capture the Flag</p>
+          <p class="rule-text">Each challenge hides a secret flag formatted as <strong>FLAG{...}</strong>. Find it, submit it, claim your points. Flags are case-sensitive — precision matters.</p>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="rule-card">
+          <div class="rule-tape"></div>
+          <span class="rule-number">02</span>
+          <div class="rule-icon"><i class="bi bi-person-fill"></i></div>
+          <p class="rule-title">Solo Investigation</p>
+          <p class="rule-text">Each agent competes independently. Sharing flags or solutions is strictly prohibited. Collaboration outside the sanctioned platform will result in disqualification.</p>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="rule-card">
+          <div class="rule-tape"></div>
+          <span class="rule-number">03</span>
+          <div class="rule-icon"><i class="bi bi-shield-lock-fill"></i></div>
+          <p class="rule-title">No Sabotage</p>
+          <p class="rule-text">Do not attempt to disrupt the platform, attack infrastructure, or interfere with other agents' sessions. The only target is the challenge itself.</p>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="rule-card">
+          <div class="rule-tape"></div>
+          <span class="rule-number">04</span>
+          <div class="rule-icon"><i class="bi bi-clock-fill"></i></div>
+          <p class="rule-title">Time is Evidence</p>
+          <p class="rule-text">The competition runs for a fixed window. Faster solves earn bonus points. The clock is always ticking — manage your time like a seasoned detective.</p>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="rule-card">
+          <div class="rule-tape"></div>
+          <span class="rule-number">05</span>
+          <div class="rule-icon"><i class="bi bi-star-fill"></i></div>
+          <p class="rule-title">Point Scoring</p>
+          <p class="rule-text">Challenges are weighted by difficulty: Easy (100 pts), Medium (250 pts), Hard (500 pts). First blood earns a 50-point bonus. Final scores determine the leaderboard.</p>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="rule-card">
+          <div class="rule-tape"></div>
+          <span class="rule-number">06</span>
+          <div class="rule-icon"><i class="bi bi-exclamation-triangle-fill"></i></div>
+          <p class="rule-title">Fair Play</p>
+          <p class="rule-text">Automated brute-force, flag guessing scripts, or any automated exploit tools are forbidden. Use your mind, not your machines — this is a test of skill.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CATEGORIES -->
+<section class="section-cork" id="categories" style="background-color: #b5834f; padding-top: 0; padding-bottom: 4rem;">
+  <div class="container">
+    <div class="section-header" style="padding-top:3rem;">
+      <p class="section-label">— Case Files —</p>
+      <h2 class="section-title">Challenge Categories</h2>
+      <div class="section-divider"></div>
+    </div>
+    <div class="text-center">
+      <a href="game.html?cat=forensics" class="cat-badge"><i class="bi bi-search"></i> Forensics</a>
+      <a href="game.html?cat=crypto" class="cat-badge"><i class="bi bi-lock-fill"></i> Cryptography</a>
+      <a href="game.html?cat=stego" class="cat-badge"><i class="bi bi-image-fill"></i> Steganography</a>
+      <a href="game.html?cat=web" class="cat-badge"><i class="bi bi-globe2"></i> Web Exploitation</a>
+      <a href="game.html?cat=rev" class="cat-badge"><i class="bi bi-cpu-fill"></i> Reverse Engineering</a>
+      <a href="game.html?cat=pwn" class="cat-badge"><i class="bi bi-terminal-fill"></i> Binary Pwn</a>
+      <a href="game.html?cat=osint" class="cat-badge"><i class="bi bi-eye-fill"></i> OSINT</a>
+      <a href="game.html?cat=misc" class="cat-badge"><i class="bi bi-puzzle-fill"></i> Miscellaneous</a>
+    </div>
+  </div>
+</section>
+
+<!-- LEADERBOARD PREVIEW + ABOUT -->
+<section class="section-cork" style="background-color:#9e6e3a;">
+  <div class="container">
+    <div class="row align-items-start g-5">
+      <div class="col-lg-6">
+        <p class="section-label" style="text-align:left;">— Intelligence File —</p>
+        <h2 class="section-title" style="text-align:left; font-size:2.2rem;">What is CTF?</h2>
+        <div class="section-divider" style="margin:1rem 0;"></div>
+        <div class="rule-card mt-2">
+          <p class="rule-text" style="font-size:0.9rem; line-height:1.9;">
+            <strong>Capture The Flag (CTF)</strong> is a cybersecurity competition where participants solve security challenges to find hidden strings called <em>flags</em>. Each flag proves you've cracked the puzzle.<br><br>
+            Challenges span cryptography, digital forensics, steganography, web hacking, reverse engineering, and more. CTFs are used worldwide to train the next generation of security professionals.<br><br>
+            <strong>EduCTF 2026</strong> is organized by the <em>PUP Sto. Tomas Campus Computer Society</em> to cultivate digital defense skills among students. Whether you're a rookie detective or a seasoned hacker — every agent is welcome.
+          </p>
+        </div>
+      </div>
+      <div class="col-lg-6">
+        <p class="section-label" style="text-align:left;">— Active Intel —</p>
+        <h2 class="section-title" style="text-align:left; font-size:2.2rem;">Top Agents</h2>
+        <div class="section-divider" style="margin:1rem 0;"></div>
+        <div class="leaderboard-card mt-2">
+          <p class="lb-header"><i class="bi bi-trophy-fill" style="color:var(--red-string);"></i> &nbsp;Live Scoreboard</p>
+          <div class="lb-row">
+            <span class="lb-rank">🥇</span>
+            <span class="lb-name">ghost_null</span>
+            <span class="lb-score">3,450 pts</span>
+            <span class="lb-badge">ELITE</span>
+          </div>
+          <div class="lb-row">
+            <span class="lb-rank">🥈</span>
+            <span class="lb-name">xray_cmd</span>
+            <span class="lb-score">3,100 pts</span>
+            <span class="lb-badge">SENIOR</span>
+          </div>
+          <div class="lb-row">
+            <span class="lb-rank">🥉</span>
+            <span class="lb-name">static_h4x</span>
+            <span class="lb-score">2,850 pts</span>
+            <span class="lb-badge">SENIOR</span>
+          </div>
+          <div class="lb-row">
+            <span class="lb-rank" style="color:var(--ink-faded); font-size:0.85rem;">4</span>
+            <span class="lb-name">b1n4ry_wolf</span>
+            <span class="lb-score">2,400 pts</span>
+            <span class="lb-badge" style="background:var(--stamp-green);">AGENT</span>
+          </div>
+          <div class="lb-row" style="border:none;">
+            <span class="lb-rank" style="color:var(--ink-faded); font-size:0.85rem;">5</span>
+            <span class="lb-name">null_pointer</span>
+            <span class="lb-score">2,200 pts</span>
+            <span class="lb-badge" style="background:var(--stamp-green);">AGENT</span>
+          </div>
+          <div style="text-align:right; margin-top:1rem; position:relative; z-index:1;">
+            <a href="admin.html" style="font-size:0.78rem; color:var(--red-string); font-family:'Courier Prime',monospace; letter-spacing:1px; text-decoration:none;">View full standings →</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta-section">
+  <div class="container">
+    <h2 class="cta-title">Ready to Crack the Code?</h2>
+    <p class="cta-sub">// Your mission begins the moment you enter</p>
+    <a href="game.html" class="btn-primary-ctf" style="font-size:1.1rem; padding:1rem 3rem;">Open the Case Files</a>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <p class="footer-brand">EduCTF 2026</p>
+  <p class="footer-sub">PUP Sto. Tomas Campus Computer Society &nbsp;|&nbsp; May 3, 2026 &nbsp;|&nbsp; pupstb.computersociety@gmail.com</p>
+  <p class="footer-sub" style="margin-top:0.5rem; opacity:0.4;">All flags. No retreats.</p>
+</footer>
+
+<script>
+  function toggleNav() {
+    document.getElementById('navLinks').classList.toggle('active');
+  }
+  function openModal() { document.getElementById('authModal').classList.add('active'); }
+  function closeModal() { document.getElementById('authModal').classList.remove('active'); }
+  function toggleForm(which) {
+    document.getElementById('loginForm').style.display = which === 'login' ? 'block' : 'none';
+    document.getElementById('registerForm').style.display = which === 'register' ? 'block' : 'none';
+  }
+  function handleLogin() {
+    closeModal();
+    window.location.href = 'game.html';
+  }
+  function handleRegister() {
+    alert('Agent registered! Welcome to EduCTF.');
+    closeModal();
+    window.location.href = 'game.html';
+  }
+  document.getElementById('authModal').addEventListener('click', function(e) {
+    if (e.target === this) closeModal();
+  });
+</script>
+</body>
+</html>

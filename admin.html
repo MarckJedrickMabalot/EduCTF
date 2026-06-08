@@ -1,0 +1,897 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>EduCTF 2026 — Admin HQ</title>
+  <link href="https://fonts.googleapis.com/css2?family=Special+Elite&family=Courier+Prime:ital,wght@0,400;0,700;1,400&family=Oswald:wght@400;600;700&display=swap" rel="stylesheet"/>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet"/>
+  <style>
+    :root {
+      --cork: #c8955c;
+      --cork-dark: #a0714a;
+      --paper: #f5eed8;
+      --paper-aged: #e8d9b0;
+      --paper-dark: #d4c08a;
+      --ink: #1a1008;
+      --ink-faded: #3d2b1a;
+      --red-string: #8b1a1a;
+      --red-accent: #c0392b;
+      --stamp-green: #2d5a27;
+      --stamp-red: #7a1a1a;
+      --tape: rgba(255,245,180,0.7);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--ink);
+      font-family: 'Courier Prime', monospace;
+      color: var(--paper);
+      min-height: 100vh;
+    }
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background: 
+        repeating-linear-gradient(0deg, transparent, transparent 39px, rgba(139,26,26,0.04) 40px),
+        repeating-linear-gradient(90deg, transparent, transparent 39px, rgba(139,26,26,0.04) 40px);
+      pointer-events: none; z-index: 0;
+    }
+
+    /* NAVBAR */
+    nav {
+      background: #0d0804;
+      border-bottom: 3px solid var(--red-string);
+      padding: 0.7rem 1.5rem;
+      position: sticky; top: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .nav-brand { font-family:'Special Elite',serif; font-size:1.3rem; color:var(--paper); text-decoration:none; letter-spacing:2px; }
+    .nav-brand span { color:var(--red-accent); }
+    .admin-badge {
+      font-family:'Oswald',sans-serif; font-size:0.7rem; font-weight:700;
+      letter-spacing:3px; background:var(--red-string); color:var(--paper);
+      padding:3px 10px; margin-left:1rem;
+    }
+    .nav-links a {
+      font-size:0.78rem; color:rgba(245,238,216,0.5); text-decoration:none;
+      letter-spacing:1px; text-transform:uppercase; margin-left:1.5rem;
+      transition:color 0.2s;
+    }
+    .nav-links a:hover, .nav-links a.active { color:var(--paper); }
+    .nav-links a.active { color:var(--red-accent); }
+
+    .nav-toggle {
+      display: none;
+      background: none;
+      border: 1px solid var(--red-accent);
+      color: var(--paper);
+      padding: 0.2rem 0.5rem;
+      cursor: pointer;
+    }
+
+    /* LAYOUT */
+    .admin-wrap {
+      position: relative; z-index: 1;
+      display: flex; min-height: calc(100vh - 53px);
+    }
+
+    @media (max-width: 992px) {
+      .nav-toggle { display: block; }
+      .nav-links {
+        display: none !important;
+        flex-direction: column;
+        position: absolute;
+        top: 100%; left: 0; right: 0;
+        background: #0d0804;
+        padding: 1rem;
+        border-bottom: 3px solid var(--red-string);
+        align-items: flex-start !important;
+        z-index: 200;
+      }
+      .nav-links.active { display: flex !important; }
+      .nav-links a { margin: 0.5rem 0 !important; font-size: 0.9rem; }
+      
+      .admin-wrap { flex-direction: column; }
+      .admin-sidebar {
+        width: 100%; min-width: 100%;
+        border-right: none;
+        border-bottom: 1px solid rgba(139,26,26,0.4);
+        padding: 1rem 0;
+        display: none; /* Hidden by default on mobile, toggleable */
+      }
+      .admin-sidebar.active { display: block; }
+      .admin-main { padding: 1.5rem 1rem; }
+      
+      .paper-card { padding: 1rem; }
+      .stat-card { margin-bottom: 1rem; }
+      
+      .podium { gap: 0.5rem; }
+      .podium-block { width: 70px; }
+      .podium-block.first { height: 100px; }
+      .podium-block.second { height: 80px; }
+      .podium-block.third { height: 60px; }
+      
+      .paper-card, .admin-sidebar, .stat-card {
+        overflow-x: auto;
+      }
+      
+      .lb-table, .dark-table {
+        min-width: 600px; /* Force scroll on small screens */
+      }
+    }
+
+    /* SIDEBAR */
+    .admin-sidebar {
+      width: 240px; min-width: 240px;
+      background: #0d0804;
+      border-right: 1px solid rgba(139,26,26,0.4);
+      padding: 2rem 0;
+    }
+    .sidebar-section {
+      padding: 0 1.2rem;
+      margin-bottom: 2rem;
+    }
+    .sidebar-section-label {
+      font-size: 0.65rem; letter-spacing: 4px;
+      text-transform: uppercase;
+      color: rgba(245,238,216,0.25);
+      margin-bottom: 0.8rem;
+      padding-left: 0.3rem;
+    }
+    .sidebar-nav-item {
+      display: flex; align-items: center; gap: 0.8rem;
+      padding: 0.6rem 0.8rem;
+      font-size: 0.82rem;
+      color: rgba(245,238,216,0.55);
+      cursor: pointer;
+      border-radius: 2px;
+      transition: all 0.15s;
+      margin-bottom: 0.2rem;
+      border-left: 2px solid transparent;
+      letter-spacing: 0.5px;
+    }
+    .sidebar-nav-item:hover {
+      color: var(--paper);
+      background: rgba(139,26,26,0.1);
+    }
+    .sidebar-nav-item.active {
+      color: var(--paper);
+      background: rgba(139,26,26,0.2);
+      border-left-color: var(--red-string);
+    }
+    .sidebar-nav-item i { font-size: 0.95rem; }
+
+    /* MAIN */
+    .admin-main {
+      flex: 1; padding: 2rem 2rem 3rem;
+      overflow-x: hidden;
+    }
+
+    .page-title {
+      font-family: 'Special Elite', serif;
+      font-size: 2rem;
+      color: var(--paper);
+      margin-bottom: 0.3rem;
+    }
+    .page-sub {
+      font-size: 0.75rem;
+      color: rgba(245,238,216,0.35);
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      margin-bottom: 2rem;
+    }
+
+    /* STAT CARDS */
+    .stat-card {
+      background: #1a1008;
+      border: 1px solid rgba(139,26,26,0.3);
+      border-top: 3px solid var(--red-string);
+      padding: 1.5rem;
+      position: relative;
+      overflow: hidden;
+    }
+    .stat-card::after {
+      content: attr(data-icon);
+      position: absolute; right: 1rem; top: 50%;
+      transform: translateY(-50%);
+      font-size: 3rem;
+      opacity: 0.06;
+    }
+    .stat-label {
+      font-size: 0.7rem; letter-spacing: 3px;
+      text-transform: uppercase;
+      color: rgba(245,238,216,0.4);
+      margin-bottom: 0.5rem;
+    }
+    .stat-value {
+      font-family: 'Special Elite', serif;
+      font-size: 2.5rem;
+      color: var(--paper);
+      line-height: 1;
+      margin-bottom: 0.3rem;
+    }
+    .stat-delta {
+      font-size: 0.72rem;
+      color: var(--stamp-green);
+      letter-spacing: 1px;
+    }
+
+    /* PAPER CARD */
+    .paper-card {
+      background: var(--paper);
+      color: var(--ink);
+      padding: 1.5rem;
+      position: relative;
+      box-shadow: 4px 4px 0 rgba(0,0,0,0.4);
+    }
+    .paper-card::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: repeating-linear-gradient(transparent, transparent 26px, #c9b88a55 27px);
+      pointer-events: none;
+    }
+    .paper-card-title {
+      font-family: 'Special Elite', serif;
+      font-size: 1.2rem;
+      color: var(--ink);
+      border-bottom: 2px solid var(--ink);
+      padding-bottom: 0.5rem;
+      margin-bottom: 1rem;
+      position: relative; z-index: 1;
+    }
+
+    /* LEADERBOARD TABLE */
+    .lb-table {
+      width: 100%;
+      border-collapse: collapse;
+      position: relative; z-index: 1;
+    }
+    .lb-table th {
+      font-family: 'Oswald', sans-serif;
+      font-size: 0.7rem;
+      font-weight: 600;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--ink-faded);
+      padding: 0.5rem 0.8rem;
+      text-align: left;
+      border-bottom: 1.5px solid var(--ink);
+    }
+    .lb-table td {
+      padding: 0.7rem 0.8rem;
+      border-bottom: 1px dashed var(--paper-dark);
+      font-size: 0.85rem;
+      color: var(--ink);
+    }
+    .lb-table tr:hover td { background: rgba(139,26,26,0.04); }
+    .rank-gold { font-family:'Oswald',sans-serif; font-weight:700; font-size:1.1rem; }
+    .tier-elite { background:var(--stamp-red); color:white; font-family:'Oswald',sans-serif; font-size:0.6rem; letter-spacing:2px; padding:2px 7px; }
+    .tier-senior { background:#6b4c0a; color:white; font-family:'Oswald',sans-serif; font-size:0.6rem; letter-spacing:2px; padding:2px 7px; }
+    .tier-agent { background:var(--stamp-green); color:white; font-family:'Oswald',sans-serif; font-size:0.6rem; letter-spacing:2px; padding:2px 7px; }
+    .tier-rookie { background:#555; color:white; font-family:'Oswald',sans-serif; font-size:0.6rem; letter-spacing:2px; padding:2px 7px; }
+
+    /* PROGRESS BAR */
+    .mini-prog { height: 6px; background: var(--paper-dark); }
+    .mini-prog-fill { height: 100%; background: var(--stamp-red); }
+
+    /* DARK TABLE */
+    .dark-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .dark-table th {
+      font-family: 'Oswald', sans-serif;
+      font-size: 0.68rem;
+      font-weight: 600;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: rgba(245,238,216,0.35);
+      padding: 0.6rem 0.8rem;
+      text-align: left;
+      border-bottom: 1px solid rgba(139,26,26,0.3);
+    }
+    .dark-table td {
+      padding: 0.7rem 0.8rem;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      font-size: 0.82rem;
+      color: rgba(245,238,216,0.7);
+    }
+    .dark-table tr:hover td { background: rgba(139,26,26,0.08); }
+
+    /* CHART BARS */
+    .bar-chart { display: flex; align-items: flex-end; gap: 6px; height: 100px; }
+    .bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+    .bar-fill {
+      width: 100%;
+      background: var(--red-string);
+      position: relative;
+      transition: height 0.5s ease;
+      min-height: 4px;
+    }
+    .bar-fill:hover { background: var(--red-accent); }
+    .bar-label { font-size: 0.6rem; color: rgba(245,238,216,0.35); letter-spacing: 1px; text-transform: uppercase; text-align: center; }
+    .bar-val { font-size: 0.65rem; color: rgba(245,238,216,0.5); }
+
+    /* ACTIVITY FEED */
+    .activity-item {
+      display: flex; gap: 0.8rem; align-items: flex-start;
+      padding: 0.6rem 0;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      font-size: 0.8rem;
+      color: rgba(245,238,216,0.6);
+    }
+    .activity-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      margin-top: 5px; flex-shrink: 0;
+    }
+    .dot-solve { background: var(--stamp-green); }
+    .dot-join { background: #6b7280; }
+    .dot-blood { background: var(--red-string); }
+    .activity-time { font-size: 0.7rem; color: rgba(245,238,216,0.25); white-space: nowrap; }
+
+    /* SECTION TABS */
+    .tab-nav {
+      display: flex; gap: 0; border-bottom: 2px solid rgba(139,26,26,0.3);
+      margin-bottom: 1.5rem;
+    }
+    .tab-btn {
+      font-family: 'Oswald', sans-serif;
+      font-size: 0.75rem; font-weight: 600;
+      letter-spacing: 2px; text-transform: uppercase;
+      background: none; border: none;
+      color: rgba(245,238,216,0.35);
+      padding: 0.6rem 1.2rem;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -2px;
+      transition: all 0.2s;
+    }
+    .tab-btn:hover { color: rgba(245,238,216,0.7); }
+    .tab-btn.active { color: var(--paper); border-bottom-color: var(--red-string); }
+
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    /* SEARCH BAR */
+    .search-bar {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(139,26,26,0.3);
+      color: var(--paper);
+      font-family: 'Courier Prime', monospace;
+      font-size: 0.85rem;
+      padding: 0.5rem 1rem;
+      outline: none;
+      width: 260px;
+    }
+    .search-bar::placeholder { color: rgba(245,238,216,0.25); }
+    .search-bar:focus { border-color: var(--red-string); }
+
+    /* BTN */
+    .btn-admin {
+      font-family: 'Oswald', sans-serif;
+      font-size: 0.75rem; font-weight: 600;
+      letter-spacing: 2px; text-transform: uppercase;
+      border: 1.5px solid var(--red-string);
+      color: var(--paper);
+      background: transparent;
+      padding: 0.4rem 1rem;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .btn-admin:hover { background: var(--red-string); }
+    .btn-admin.danger { border-color: #c0392b; }
+    .btn-admin.danger:hover { background: #c0392b; }
+
+    /* Section visibility */
+    .admin-section { display: none; }
+    .admin-section.active { display: block; }
+
+    /* Podium */
+    .podium { display: flex; align-items: flex-end; justify-content: center; gap: 1rem; margin: 1rem 0; }
+    .podium-step {
+      text-align: center;
+      position: relative;
+    }
+    .podium-name {
+      font-family: 'Courier Prime', monospace;
+      font-size: 0.75rem;
+      color: var(--paper);
+      margin-bottom: 0.4rem;
+    }
+    .podium-block {
+      background: rgba(139,26,26,0.4);
+      border-top: 3px solid var(--red-string);
+      width: 90px;
+      display: flex; align-items: flex-end; justify-content: center;
+      padding-bottom: 0.6rem;
+    }
+    .podium-block.first { height: 120px; background: rgba(139,26,26,0.6); border-top-color: #ffd700; }
+    .podium-block.second { height: 90px; }
+    .podium-block.third { height: 70px; background: rgba(100,60,20,0.4); border-top-color: #cd7f32; }
+    .podium-pts {
+      font-family: 'Oswald', sans-serif;
+      font-size: 0.9rem; font-weight: 700;
+      color: rgba(245,238,216,0.8);
+    }
+    .podium-rank { font-size: 1.5rem; }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="d-flex align-items-center">
+    <button class="nav-toggle d-lg-none me-3" onclick="toggleSidebar()">
+      <i class="bi bi-layout-sidebar-inset"></i>
+    </button>
+    <a href="index.html" class="nav-brand">Edu<span>CTF</span></a>
+    <span class="admin-badge d-none d-sm-inline">ADMIN HQ</span>
+  </div>
+  <button class="nav-toggle" onclick="toggleNav()">
+    <i class="bi bi-list"></i>
+  </button>
+  <div class="nav-links" id="navLinks">
+    <a href="index.html">← Main Site</a>
+    <a href="game.html">Challenges</a>
+    <a href="#" style="color:var(--red-accent);">[Admin: root_cmd]</a>
+  </div>
+</nav>
+
+<div class="admin-wrap">
+  <!-- SIDEBAR -->
+  <aside class="admin-sidebar">
+    <div class="sidebar-section">
+      <p class="sidebar-section-label">Navigation</p>
+      <div class="sidebar-nav-item active" onclick="showSection('dashboard', this)">
+        <i class="bi bi-grid-fill"></i> Dashboard
+      </div>
+      <div class="sidebar-nav-item" onclick="showSection('leaderboard', this)">
+        <i class="bi bi-trophy-fill"></i> Leaderboard
+      </div>
+      <div class="sidebar-nav-item" onclick="showSection('agents', this)">
+        <i class="bi bi-people-fill"></i> Agents
+      </div>
+      <div class="sidebar-nav-item" onclick="showSection('challenges', this)">
+        <i class="bi bi-folder-fill"></i> Challenges
+      </div>
+      <div class="sidebar-nav-item" onclick="showSection('activity', this)">
+        <i class="bi bi-activity"></i> Activity Log
+      </div>
+    </div>
+    <div class="sidebar-section">
+      <p class="sidebar-section-label">Competition</p>
+      <div class="sidebar-nav-item">
+        <i class="bi bi-play-circle-fill" style="color:var(--stamp-green);"></i> 
+        <span style="color:rgba(45,90,39,0.9);">Live — 4:32 left</span>
+      </div>
+      <div class="sidebar-nav-item">
+        <i class="bi bi-gear-fill"></i> Settings
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="admin-main">
+
+    <!-- ── DASHBOARD ── -->
+    <div id="sec-dashboard" class="admin-section active">
+      <h1 class="page-title">Command Center</h1>
+      <p class="page-sub">// Real-time intelligence — EduCTF 2026</p>
+
+      <!-- STATS -->
+      <div class="row g-3 mb-4">
+        <div class="col-sm-6 col-lg-3">
+          <div class="stat-card" data-icon="👤">
+            <p class="stat-label">Registered Agents</p>
+            <p class="stat-value">47</p>
+            <p class="stat-delta">↑ +3 last hour</p>
+          </div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+          <div class="stat-card" data-icon="🚩" style="border-top-color:#2d5a27;">
+            <p class="stat-label">Flags Captured</p>
+            <p class="stat-value">183</p>
+            <p class="stat-delta" style="color:#2d5a27;">↑ +12 last 30min</p>
+          </div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+          <div class="stat-card" data-icon="🔥" style="border-top-color:#8b6914;">
+            <p class="stat-label">Active Solvers</p>
+            <p class="stat-value">31</p>
+            <p class="stat-delta" style="color:#8b6914;">Currently online</p>
+          </div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+          <div class="stat-card" data-icon="⏱">
+            <p class="stat-label">Remaining Time</p>
+            <p class="stat-value" id="adminTimer">04:32</p>
+            <p class="stat-delta" style="color:var(--red-accent);">Competition live</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="row g-3 mb-4">
+        <!-- Podium -->
+        <div class="col-lg-5">
+          <div style="background:#1a1008; border:1px solid rgba(139,26,26,0.3); padding:1.5rem;">
+            <p style="font-family:'Special Elite',serif; font-size:1.1rem; color:var(--paper); margin-bottom:1rem; border-bottom:1px solid rgba(139,26,26,0.3); padding-bottom:0.5rem;">
+              <i class="bi bi-trophy-fill" style="color:#ffd700;"></i> &nbsp;Top 3 Agents
+            </p>
+            <div class="podium">
+              <div class="podium-step">
+                <p class="podium-name">xray_cmd</p>
+                <div class="podium-block second">
+                  <div><div class="podium-rank">🥈</div><div class="podium-pts">3,100</div></div>
+                </div>
+              </div>
+              <div class="podium-step">
+                <p class="podium-name" style="color:#ffd700; font-weight:bold;">ghost_null</p>
+                <div class="podium-block first">
+                  <div><div class="podium-rank">🥇</div><div class="podium-pts">3,450</div></div>
+                </div>
+              </div>
+              <div class="podium-step">
+                <p class="podium-name">static_h4x</p>
+                <div class="podium-block third">
+                  <div><div class="podium-rank">🥉</div><div class="podium-pts">2,850</div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Solve rate chart -->
+        <div class="col-lg-4">
+          <div style="background:#1a1008; border:1px solid rgba(139,26,26,0.3); padding:1.5rem; height:100%;">
+            <p style="font-family:'Special Elite',serif; font-size:1.1rem; color:var(--paper); margin-bottom:1.2rem; border-bottom:1px solid rgba(139,26,26,0.3); padding-bottom:0.5rem;">
+              <i class="bi bi-bar-chart-fill" style="color:var(--red-string);"></i> &nbsp;Solves by Category
+            </p>
+            <div class="bar-chart">
+              <div class="bar-col">
+                <span class="bar-val">42</span>
+                <div class="bar-fill" style="height:84px;"></div>
+                <span class="bar-label">Crypto</span>
+              </div>
+              <div class="bar-col">
+                <span class="bar-val">38</span>
+                <div class="bar-fill" style="height:76px; background:#6b4c0a;"></div>
+                <span class="bar-label">Foren</span>
+              </div>
+              <div class="bar-col">
+                <span class="bar-val">29</span>
+                <div class="bar-fill" style="height:58px; background:#2d5a27;"></div>
+                <span class="bar-label">Stego</span>
+              </div>
+              <div class="bar-col">
+                <span class="bar-val">35</span>
+                <div class="bar-fill" style="height:70px;"></div>
+                <span class="bar-label">Web</span>
+              </div>
+              <div class="bar-col">
+                <span class="bar-val">21</span>
+                <div class="bar-fill" style="height:42px; background:#4a3a7a;"></div>
+                <span class="bar-label">Rev</span>
+              </div>
+              <div class="bar-col">
+                <span class="bar-val">18</span>
+                <div class="bar-fill" style="height:36px; background:#1a5a5a;"></div>
+                <span class="bar-label">OSINT</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Challenge solve rates -->
+        <div class="col-lg-3">
+          <div style="background:#1a1008; border:1px solid rgba(139,26,26,0.3); padding:1.5rem; height:100%;">
+            <p style="font-family:'Special Elite',serif; font-size:1.1rem; color:var(--paper); margin-bottom:1rem; border-bottom:1px solid rgba(139,26,26,0.3); padding-bottom:0.5rem;">
+              Challenge Status
+            </p>
+            <div style="font-size:0.78rem; color:rgba(245,238,216,0.5);">
+              <div style="margin-bottom:0.8rem;">
+                <div style="display:flex;justify-content:space-between;margin-bottom:3px;">
+                  <span>Caesar's Ghost</span><span style="color:var(--stamp-green);">38 solves</span>
+                </div>
+                <div class="mini-prog"><div class="mini-prog-fill" style="width:81%; background:var(--stamp-green);"></div></div>
+              </div>
+              <div style="margin-bottom:0.8rem;">
+                <div style="display:flex;justify-content:space-between;margin-bottom:3px;">
+                  <span>Cookie Monster</span><span style="color:var(--stamp-green);">35 solves</span>
+                </div>
+                <div class="mini-prog"><div class="mini-prog-fill" style="width:74%; background:var(--stamp-green);"></div></div>
+              </div>
+              <div style="margin-bottom:0.8rem;">
+                <div style="display:flex;justify-content:space-between;margin-bottom:3px;">
+                  <span>Memory Leak</span><span style="color:#8b6914;">19 solves</span>
+                </div>
+                <div class="mini-prog"><div class="mini-prog-fill" style="width:40%; background:#8b6914;"></div></div>
+              </div>
+              <div style="margin-bottom:0;">
+                <div style="display:flex;justify-content:space-between;margin-bottom:3px;">
+                  <span>Ghost Profile</span><span style="color:var(--stamp-red);">4 solves</span>
+                </div>
+                <div class="mini-prog"><div class="mini-prog-fill" style="width:9%;"></div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent Activity -->
+      <div style="background:#1a1008; border:1px solid rgba(139,26,26,0.3); padding:1.5rem;">
+        <p style="font-family:'Special Elite',serif; font-size:1.1rem; color:var(--paper); margin-bottom:1rem; border-bottom:1px solid rgba(139,26,26,0.3); padding-bottom:0.5rem;">
+          <i class="bi bi-activity" style="color:var(--red-string);"></i> &nbsp;Live Feed
+        </p>
+        <div id="liveFeed"></div>
+      </div>
+    </div>
+
+    <!-- ── LEADERBOARD ── -->
+    <div id="sec-leaderboard" class="admin-section">
+      <h1 class="page-title">Agent Rankings</h1>
+      <p class="page-sub">// Full standings — EduCTF 2026</p>
+
+      <div class="paper-card">
+        <p class="paper-card-title"><i class="bi bi-trophy-fill" style="color:var(--red-string);"></i> &nbsp;Leaderboard — Live</p>
+        <div style="display:flex; justify-content:flex-end; margin-bottom:1rem; position:relative; z-index:1;">
+          <input type="text" class="search-bar" style="background:rgba(0,0,0,0.05); border-color:var(--ink-faded); color:var(--ink);" placeholder="Search agent..." oninput="filterAgents(this.value)"/>
+        </div>
+        <table class="lb-table" id="lbTable">
+          <thead>
+            <tr>
+              <th>Rank</th>
+              <th>Agent</th>
+              <th>Tier</th>
+              <th>Solved</th>
+              <th>Score</th>
+              <th>Last Solve</th>
+              <th>Progress</th>
+            </tr>
+          </thead>
+          <tbody id="lbBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ── AGENTS ── -->
+    <div id="sec-agents" class="admin-section">
+      <h1 class="page-title">Agent Registry</h1>
+      <p class="page-sub">// All registered participants</p>
+
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;">
+        <input type="text" class="search-bar" placeholder="Search by name or email..."/>
+        <button class="btn-admin"><i class="bi bi-plus"></i> Add Agent</button>
+      </div>
+
+      <div style="background:#1a1008; border:1px solid rgba(139,26,26,0.2);">
+        <table class="dark-table" id="agentsTable">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Codename</th>
+              <th>Email</th>
+              <th>Joined</th>
+              <th>Solved</th>
+              <th>Score</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="agentsBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ── CHALLENGES ── -->
+    <div id="sec-challenges" class="admin-section">
+      <h1 class="page-title">Challenge Management</h1>
+      <p class="page-sub">// Monitor and manage all case files</p>
+
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;">
+        <div class="tab-nav" style="border:none; margin:0;">
+          <button class="tab-btn active" onclick="switchChalTab('all',this)">All (12)</button>
+          <button class="tab-btn" onclick="switchChalTab('easy',this)">Easy</button>
+          <button class="tab-btn" onclick="switchChalTab('medium',this)">Medium</button>
+          <button class="tab-btn" onclick="switchChalTab('hard',this)">Hard</button>
+        </div>
+        <button class="btn-admin"><i class="bi bi-plus"></i> New Challenge</button>
+      </div>
+
+      <div style="background:#1a1008; border:1px solid rgba(139,26,26,0.2);">
+        <table class="dark-table">
+          <thead>
+            <tr>
+              <th>Title</th>
+              <th>Category</th>
+              <th>Difficulty</th>
+              <th>Points</th>
+              <th>Solves</th>
+              <th>First Blood</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="challAdminBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ── ACTIVITY ── -->
+    <div id="sec-activity" class="admin-section">
+      <h1 class="page-title">Activity Log</h1>
+      <p class="page-sub">// All recorded events — chronological</p>
+      <div style="background:#1a1008; border:1px solid rgba(139,26,26,0.3); padding:1.5rem;">
+        <div id="fullActivityLog"></div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+function toggleNav() {
+  document.getElementById('navLinks').classList.toggle('active');
+}
+function toggleSidebar() {
+  document.querySelector('.admin-sidebar').classList.toggle('active');
+}
+const agentData = [
+  { rank:1, name:'ghost_null',    email:'ghost@mail.com',    joined:'May 3, 07:01', solved:9,  score:3450, status:'online'  },
+  { rank:2, name:'xray_cmd',      email:'xray@mail.com',     joined:'May 3, 07:04', solved:8,  score:3100, status:'online'  },
+  { rank:3, name:'static_h4x',    email:'static@mail.com',   joined:'May 3, 07:00', solved:7,  score:2850, status:'online'  },
+  { rank:4, name:'b1n4ry_wolf',   email:'wolf@mail.com',     joined:'May 3, 07:15', solved:6,  score:2400, status:'online'  },
+  { rank:5, name:'null_pointer',  email:'null@mail.com',     joined:'May 3, 07:22', solved:6,  score:2200, status:'away'    },
+  { rank:6, name:'hex_hawk',      email:'hex@mail.com',      joined:'May 3, 07:30', solved:5,  score:1900, status:'online'  },
+  { rank:7, name:'d3_cipher',     email:'d3@mail.com',       joined:'May 3, 07:45', solved:4,  score:1500, status:'offline' },
+  { rank:8, name:'root_access',   email:'root@mail.com',     joined:'May 3, 08:00', solved:4,  score:1400, status:'online'  },
+  { rank:9, name:'pingtest',      email:'ping@mail.com',     joined:'May 3, 08:12', solved:3,  score:1200, status:'away'    },
+  { rank:10,name:'byte_bandit',   email:'byte@mail.com',     joined:'May 3, 08:30', solved:3,  score:1000, status:'offline' },
+];
+
+const chalAdminData = [
+  { title:"Dead Drop Signal",     cat:"Forensics",     diff:"easy",   pts:100, solves:35, blood:"xray_cmd",   active:true  },
+  { title:"Caesar's Ghost",       cat:"Cryptography",  diff:"easy",   pts:100, solves:38, blood:"ghost_null", active:true  },
+  { title:"Hidden in Plain Sight",cat:"Steganography", diff:"medium", pts:250, solves:22, blood:"static_h4x", active:true  },
+  { title:"The Open Door",        cat:"Web",           diff:"easy",   pts:100, solves:31, blood:"b1n4ry_wolf", active:true },
+  { title:"The Vigenère Vault",   cat:"Cryptography",  diff:"medium", pts:250, solves:18, blood:"ghost_null", active:true  },
+  { title:"Memory Leak",          cat:"Forensics",     diff:"medium", pts:250, solves:19, blood:"xray_cmd",   active:true  },
+  { title:"Morse in the Noise",   cat:"Steganography", diff:"medium", pts:250, solves:14, blood:"null_pointer",active:true },
+  { title:"Strings of Deception", cat:"Reverse Eng.",  diff:"hard",   pts:500, solves:6,  blood:"ghost_null", active:true  },
+  { title:"The Ghost Profile",    cat:"OSINT",         diff:"hard",   pts:500, solves:4,  blood:"d3_cipher",  active:true  },
+  { title:"QR Gone Wrong",        cat:"Misc",          diff:"medium", pts:250, solves:20, blood:"hex_hawk",   active:true  },
+  { title:"Base of Operations",   cat:"Cryptography",  diff:"easy",   pts:100, solves:42, blood:"ghost_null", active:true  },
+  { title:"Cookie Monster",       cat:"Web",           diff:"easy",   pts:100, solves:35, blood:"b1n4ry_wolf", active:true },
+];
+
+const activities = [
+  { type:'blood', msg:'ghost_null captured FIRST BLOOD on "Strings of Deception" (+550 pts)', time:'2 min ago' },
+  { type:'solve', msg:'hex_hawk solved "QR Gone Wrong" (+250 pts)', time:'4 min ago' },
+  { type:'solve', msg:'b1n4ry_wolf solved "The Open Door" (+100 pts)', time:'6 min ago' },
+  { type:'join',  msg:'New agent agent_zero registered', time:'9 min ago' },
+  { type:'solve', msg:'xray_cmd solved "Memory Leak" (+250 pts)', time:'12 min ago' },
+  { type:'solve', msg:'null_pointer solved "Hidden in Plain Sight" (+250 pts)', time:'15 min ago' },
+  { type:'blood', msg:'d3_cipher captured FIRST BLOOD on "The Ghost Profile" (+550 pts)', time:'20 min ago' },
+  { type:'join',  msg:'New agent byte_bandit registered', time:'25 min ago' },
+  { type:'solve', msg:'static_h4x solved "Caesar\'s Ghost" (+100 pts)', time:'28 min ago' },
+  { type:'solve', msg:'ghost_null solved "Base of Operations" (+100 pts)', time:'31 min ago' },
+];
+
+function getTier(score) {
+  if (score >= 3000) return '<span class="tier-elite">ELITE</span>';
+  if (score >= 2000) return '<span class="tier-senior">SENIOR</span>';
+  if (score >= 1000) return '<span class="tier-agent">AGENT</span>';
+  return '<span class="tier-rookie">ROOKIE</span>';
+}
+
+function renderLeaderboard() {
+  const body = document.getElementById('lbBody');
+  body.innerHTML = agentData.map((a,i) => {
+    const rankStr = i===0?'🥇':i===1?'🥈':i===2?'🥉':`<span style="color:var(--ink-faded);">${a.rank}</span>`;
+    const pct = Math.round(a.solved/12*100);
+    return `<tr>
+      <td><span class="rank-gold">${rankStr}</span></td>
+      <td><strong>${a.name}</strong></td>
+      <td>${getTier(a.score)}</td>
+      <td>${a.solved}/12</td>
+      <td style="font-family:'Oswald',sans-serif;font-weight:700;color:var(--red-string);font-size:1rem;">${a.score.toLocaleString()}</td>
+      <td style="font-size:0.75rem;color:var(--ink-faded);">${a.joined}</td>
+      <td style="width:100px;"><div class="mini-prog"><div class="mini-prog-fill" style="width:${pct}%; background:var(--stamp-green);"></div></div></td>
+    </tr>`;
+  }).join('');
+}
+
+function filterAgents(q) {
+  const rows = document.querySelectorAll('#lbBody tr');
+  rows.forEach(r => {
+    r.style.display = r.textContent.toLowerCase().includes(q.toLowerCase()) ? '' : 'none';
+  });
+}
+
+function renderAgents() {
+  const body = document.getElementById('agentsBody');
+  body.innerHTML = agentData.map(a => {
+    const dot = a.status==='online'?'#2d5a27':a.status==='away'?'#8b6914':'#444';
+    return `<tr>
+      <td style="color:rgba(245,238,216,0.3);">${a.rank}</td>
+      <td style="color:var(--paper);font-weight:bold;">${a.name}</td>
+      <td style="font-size:0.78rem;">${a.email}</td>
+      <td style="font-size:0.75rem;color:rgba(245,238,216,0.4);">${a.joined}</td>
+      <td>${a.solved}</td>
+      <td style="font-family:'Oswald',sans-serif;font-weight:600;color:var(--red-string);">${a.score.toLocaleString()}</td>
+      <td><span style="display:inline-flex;align-items:center;gap:5px;font-size:0.72rem;text-transform:uppercase;letter-spacing:1px;color:${dot};"><span style="width:7px;height:7px;border-radius:50%;background:${dot};"></span>${a.status}</span></td>
+      <td style="display:flex;gap:6px;">
+        <button class="btn-admin" style="font-size:0.65rem;padding:2px 8px;">View</button>
+        <button class="btn-admin danger" style="font-size:0.65rem;padding:2px 8px;">Ban</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function renderChallengesAdmin() {
+  const body = document.getElementById('challAdminBody');
+  body.innerHTML = chalAdminData.map(c => {
+    const dc = c.diff==='easy'?'color:#2d5a27':c.diff==='medium'?'color:#8b6914':'color:var(--red-string)';
+    return `<tr>
+      <td style="color:var(--paper);font-weight:bold;">${c.title}</td>
+      <td style="font-size:0.78rem;">${c.cat}</td>
+      <td style="${dc};font-family:'Oswald',sans-serif;font-size:0.75rem;font-weight:600;letter-spacing:2px;text-transform:uppercase;">${c.diff}</td>
+      <td style="font-family:'Oswald',sans-serif;font-weight:600;color:var(--red-string);">${c.pts}</td>
+      <td>${c.solves}</td>
+      <td style="font-size:0.75rem;color:rgba(245,238,216,0.5);">${c.blood}</td>
+      <td><span style="font-size:0.65rem;background:${c.active?'var(--stamp-green)':'#444'};color:white;padding:2px 8px;font-family:'Oswald',sans-serif;letter-spacing:1px;">${c.active?'LIVE':'OFF'}</span></td>
+      <td style="display:flex;gap:6px;">
+        <button class="btn-admin" style="font-size:0.65rem;padding:2px 8px;">Edit</button>
+        <button class="btn-admin danger" style="font-size:0.65rem;padding:2px 8px;">Hide</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function renderActivity(containerId) {
+  const el = document.getElementById(containerId);
+  const dotClass = { solve:'dot-solve', join:'dot-join', blood:'dot-blood' };
+  el.innerHTML = activities.map(a => `
+    <div class="activity-item">
+      <div class="activity-dot ${dotClass[a.type]}"></div>
+      <span style="flex:1;">${a.msg}</span>
+      <span class="activity-time">${a.time}</span>
+    </div>
+  `).join('');
+}
+
+function renderFullActivity() {
+  renderActivity('fullActivityLog');
+}
+
+function showSection(name, el) {
+  document.querySelectorAll('.admin-section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.sidebar-nav-item').forEach(i => i.classList.remove('active'));
+  document.getElementById('sec-' + name).classList.add('active');
+  el.classList.add('active');
+}
+
+function switchChalTab(diff, btn) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+// Timer
+let adminSec = 4*3600 + 32*60;
+setInterval(() => {
+  if (adminSec <= 0) return;
+  adminSec--;
+  const h = Math.floor(adminSec/3600);
+  const m = String(Math.floor((adminSec%3600)/60)).padStart(2,'0');
+  document.getElementById('adminTimer').textContent = `${h}:${m}`;
+}, 1000);
+
+// Init
+renderLeaderboard();
+renderAgents();
+renderChallengesAdmin();
+renderActivity('liveFeed');
+renderFullActivity();
+</script>
+</body>
+</html>

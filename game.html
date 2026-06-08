@@ -1,0 +1,857 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>EduCTF 2026 — Case Files</title>
+  <link href="https://fonts.googleapis.com/css2?family=Special+Elite&family=Courier+Prime:ital,wght@0,400;0,700;1,400&family=Oswald:wght@400;600;700&display=swap" rel="stylesheet"/>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet"/>
+  <style>
+    :root {
+      --cork: #c8955c;
+      --cork-dark: #a0714a;
+      --paper: #f5eed8;
+      --paper-aged: #e8d9b0;
+      --paper-dark: #d4c08a;
+      --ink: #1a1008;
+      --ink-faded: #3d2b1a;
+      --red-string: #8b1a1a;
+      --red-accent: #c0392b;
+      --stamp-green: #2d5a27;
+      --stamp-red: #7a1a1a;
+      --tape: rgba(255,245,180,0.7);
+      --shadow: rgba(0,0,0,0.35);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--cork);
+      font-family: 'Courier Prime', monospace;
+      color: var(--ink);
+      min-height: 100vh;
+    }
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background: url("data:image/svg+xml,%3Csvg width='60' height='60' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='60' height='60' fill='%23c8955c'/%3E%3Ccircle cx='30' cy='30' r='29' fill='%23c08850' opacity='0.2'/%3E%3C/svg%3E") center/80px,
+        radial-gradient(ellipse at 0% 0%, rgba(139,26,26,0.1) 0%, transparent 50%);
+      pointer-events: none; z-index: 0;
+    }
+
+    /* NAVBAR */
+    nav {
+      background: var(--ink);
+      border-bottom: 3px solid var(--red-string);
+      padding: 0.7rem 1.5rem;
+      position: sticky; top: 0; z-index: 100;
+    }
+    .nav-brand { font-family: 'Special Elite', serif; font-size: 1.3rem; color: var(--paper); text-decoration: none; letter-spacing: 2px; }
+    .nav-brand span { color: var(--red-accent); }
+    .nav-meta { font-size: 0.75rem; color: rgba(245,238,216,0.5); letter-spacing: 1px; text-transform: uppercase; }
+    .nav-links a {
+      font-family: 'Courier Prime', monospace;
+      font-size: 0.8rem;
+      color: var(--paper-aged);
+      text-decoration: none;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      margin-left: 1.5rem;
+      transition: color 0.2s;
+    }
+    .nav-links a:hover { color: var(--paper); }
+    
+    .nav-toggle {
+      display: none;
+      background: none;
+      border: 1px solid var(--red-accent);
+      color: var(--paper);
+      padding: 0.2rem 0.5rem;
+      cursor: pointer;
+    }
+
+    .agent-tag {
+      font-family: 'Oswald', sans-serif;
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 2px;
+      background: var(--red-string);
+      color: var(--paper);
+      padding: 3px 10px;
+      margin-left: 1.5rem;
+    }
+
+    @media (max-width: 992px) {
+      .nav-toggle { display: block; }
+      .nav-links {
+        display: none !important;
+        flex-direction: column;
+        position: absolute;
+        top: 100%; left: 0; right: 0;
+        background: var(--ink);
+        padding: 1rem;
+        border-bottom: 3px solid var(--red-string);
+        align-items: flex-start !important;
+      }
+      .nav-links.active { display: flex !important; }
+      .nav-links a { margin: 0.5rem 0 !important; font-size: 0.9rem; }
+      .agent-tag { margin: 0.5rem 0 !important; }
+      
+      .progress-strip {
+        flex-direction: column;
+        align-items: stretch !important;
+        gap: 0.8rem !important;
+      }
+      .prog-bar-wrap { height: 6px; }
+       .board-title { font-size: 1.8rem; }
+       
+       .chall-modal {
+         padding: 1.5rem !important;
+       }
+       .modal-title { font-size: 1.5rem !important; }
+       .flag-input-wrap { flex-direction: column; }
+       .btn-submit-flag { width: 100%; }
+       
+       .chall-card { transform: none !important; }
+     }
+
+    /* BOARD HEADER */
+    .board-header {
+      position: relative; z-index: 1;
+      padding: 2.5rem 0 1.5rem;
+      text-align: center;
+    }
+    .board-title {
+      font-family: 'Special Elite', serif;
+      font-size: 2.5rem;
+      color: var(--paper);
+      text-shadow: 2px 2px 0 var(--ink);
+    }
+    .board-sub {
+      font-size: 0.8rem;
+      color: rgba(245,238,216,0.6);
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      margin-top: 0.3rem;
+    }
+
+    /* PROGRESS BAR */
+    .progress-strip {
+      background: var(--paper);
+      padding: 0.8rem 1.5rem;
+      position: relative; z-index: 1;
+      display: flex; align-items: center; gap: 1.5rem;
+      margin: 0 1rem 1.5rem;
+      box-shadow: 3px 3px 0 var(--cork-dark);
+    }
+    .progress-strip::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: repeating-linear-gradient(transparent, transparent 26px, #c9b88a55 27px);
+      pointer-events: none;
+    }
+    .prog-label {
+      font-family: 'Oswald', sans-serif;
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--ink-faded);
+      position: relative; z-index: 1;
+    }
+    .prog-val {
+      font-family: 'Special Elite', serif;
+      font-size: 1.3rem;
+      color: var(--stamp-red);
+      position: relative; z-index: 1;
+    }
+    .prog-bar-wrap {
+      flex: 1; height: 10px;
+      background: var(--paper-dark);
+      border: 1px solid var(--ink-faded);
+      position: relative; z-index: 1;
+    }
+    .prog-bar-fill {
+      height: 100%;
+      background: var(--stamp-green);
+      transition: width 0.5s ease;
+    }
+
+    /* CATEGORY FILTERS */
+    .cat-filters {
+      position: relative; z-index: 1;
+      display: flex; flex-wrap: wrap; gap: 0.4rem;
+      margin: 0 1rem 1.5rem;
+    }
+    .cat-btn {
+      font-family: 'Oswald', sans-serif;
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      background: var(--paper-aged);
+      color: var(--ink);
+      border: 1.5px solid var(--ink-faded);
+      padding: 0.35rem 1rem;
+      cursor: pointer;
+      transition: all 0.15s;
+      box-shadow: 2px 2px 0 var(--cork-dark);
+    }
+    .cat-btn:hover, .cat-btn.active {
+      background: var(--ink);
+      color: var(--paper);
+      box-shadow: 2px 2px 0 var(--red-string);
+    }
+    .cat-btn.active { border-color: var(--red-string); }
+
+    /* CHALLENGE GRID */
+    .board-grid {
+      position: relative; z-index: 1;
+      padding: 0 1rem 3rem;
+    }
+
+    /* CHALLENGE CARD */
+    .chall-card {
+      background: var(--paper);
+      position: relative;
+      padding: 1.5rem 1.5rem 1.2rem;
+      box-shadow: 4px 4px 0 var(--cork-dark), 2px 2px 15px rgba(0,0,0,0.25);
+      cursor: pointer;
+      transition: transform 0.15s, box-shadow 0.15s;
+      height: 100%;
+    }
+    .chall-card::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: repeating-linear-gradient(transparent, transparent 26px, #c9b88a55 27px);
+      pointer-events: none;
+    }
+    .chall-card:hover {
+      transform: translate(-2px,-3px) rotate(0.4deg);
+      box-shadow: 6px 6px 0 var(--ink), 2px 2px 20px rgba(0,0,0,0.3);
+    }
+    .chall-card.solved {
+      background: #e8f0e8;
+      border-left: 4px solid var(--stamp-green);
+    }
+    .chall-card.solved::after {
+      content: 'SOLVED';
+      position: absolute; top: 10px; right: -8px;
+      background: var(--stamp-green);
+      color: white;
+      font-family: 'Oswald', sans-serif;
+      font-size: 0.6rem;
+      font-weight: 700;
+      letter-spacing: 3px;
+      padding: 2px 12px;
+      transform: rotate(0deg);
+      box-shadow: 2px 2px 0 rgba(0,0,0,0.2);
+      z-index: 5;
+    }
+    .chall-pin {
+      position: absolute;
+      top: -9px; left: 50%;
+      transform: translateX(-50%);
+      width: 16px; height: 16px;
+      background: radial-gradient(circle at 35% 35%, #ff7777, var(--red-string));
+      border-radius: 50%;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.4);
+      z-index: 10;
+    }
+    .chall-cat {
+      font-family: 'Oswald', sans-serif;
+      font-size: 0.65rem;
+      font-weight: 600;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--stamp-red);
+      margin-bottom: 0.4rem;
+      position: relative; z-index: 1;
+    }
+    .chall-title {
+      font-family: 'Special Elite', serif;
+      font-size: 1.1rem;
+      color: var(--ink);
+      margin-bottom: 0.4rem;
+      position: relative; z-index: 1;
+      line-height: 1.2;
+    }
+    .chall-story {
+      font-size: 0.78rem;
+      color: var(--ink-faded);
+      line-height: 1.6;
+      margin-bottom: 0.8rem;
+      position: relative; z-index: 1;
+    }
+    .chall-footer {
+      display: flex; align-items: center; justify-content: space-between;
+      position: relative; z-index: 1;
+    }
+    .diff-badge {
+      font-family: 'Oswald', sans-serif;
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      padding: 2px 8px;
+      border: 1.5px solid currentColor;
+    }
+    .diff-easy { color: var(--stamp-green); }
+    .diff-medium { color: #8b6914; }
+    .diff-hard { color: var(--stamp-red); }
+    .chall-pts {
+      font-family: 'Oswald', sans-serif;
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--red-string);
+    }
+
+    /* MODAL */
+    .modal-overlay {
+      position: fixed; inset: 0;
+      background: rgba(10,5,2,0.88);
+      z-index: 500;
+      display: none; align-items: center; justify-content: center;
+    }
+    .modal-overlay.active { display: flex; }
+
+    .chall-modal {
+      background: var(--paper);
+      width: 620px; max-width: 96vw;
+      max-height: 92vh; overflow-y: auto;
+      position: relative;
+      box-shadow: 8px 8px 0 var(--ink), 4px 4px 40px rgba(0,0,0,0.6);
+      padding: 2.5rem;
+    }
+    .chall-modal::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: repeating-linear-gradient(transparent, transparent 27px, #c9b88a55 28px);
+      pointer-events: none;
+    }
+    .modal-tape-l {
+      position: absolute; top: 30px; left: -12px;
+      width: 28px; height: 60px;
+      background: var(--tape);
+      border: 1px solid rgba(200,180,80,0.3);
+      transform: rotate(-5deg);
+    }
+    .modal-close {
+      position: absolute; top: 1rem; right: 1rem;
+      background: none; border: none;
+      font-size: 1.2rem; cursor: pointer;
+      color: var(--ink-faded); z-index: 10;
+    }
+    .modal-cat {
+      font-family: 'Oswald', sans-serif;
+      font-size: 0.7rem; font-weight: 700;
+      letter-spacing: 4px; text-transform: uppercase;
+      color: var(--stamp-red);
+      margin-bottom: 0.3rem;
+      position: relative; z-index: 1;
+    }
+    .modal-title {
+      font-family: 'Special Elite', serif;
+      font-size: 2rem;
+      color: var(--ink);
+      margin-bottom: 0.8rem;
+      position: relative; z-index: 1;
+    }
+    .modal-divider {
+      border: none; border-top: 2px solid var(--ink);
+      margin: 1rem 0; position: relative; z-index: 1;
+    }
+    .modal-section-label {
+      font-family: 'Oswald', sans-serif;
+      font-size: 0.75rem; font-weight: 600;
+      letter-spacing: 3px; text-transform: uppercase;
+      color: var(--ink-faded);
+      margin-bottom: 0.5rem;
+      position: relative; z-index: 1;
+    }
+    .modal-body-text {
+      font-size: 0.88rem;
+      color: var(--ink-faded);
+      line-height: 1.8;
+      position: relative; z-index: 1;
+      margin-bottom: 1rem;
+    }
+    .modal-hint {
+      background: rgba(139,26,26,0.06);
+      border-left: 3px solid var(--red-string);
+      padding: 0.7rem 1rem;
+      font-size: 0.82rem;
+      color: var(--ink-faded);
+      position: relative; z-index: 1;
+      margin-bottom: 1rem;
+      font-style: italic;
+    }
+    .flag-input-wrap {
+      position: relative; z-index: 1;
+      display: flex; gap: 0.5rem; margin-top: 1.2rem;
+    }
+    .flag-input {
+      flex: 1;
+      background: transparent;
+      border: 2px solid var(--ink-faded);
+      border-bottom-color: var(--ink);
+      font-family: 'Courier Prime', monospace;
+      font-size: 0.9rem;
+      color: var(--ink);
+      padding: 0.6rem 1rem;
+      outline: none;
+    }
+    .flag-input:focus { border-color: var(--red-string); }
+    .flag-input::placeholder { color: #a09070; }
+    .btn-submit-flag {
+      font-family: 'Oswald', sans-serif;
+      font-size: 0.85rem; font-weight: 700;
+      letter-spacing: 2px; text-transform: uppercase;
+      background: var(--stamp-red);
+      color: var(--paper);
+      border: 2px solid var(--ink);
+      padding: 0.6rem 1.5rem;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .btn-submit-flag:hover {
+      background: var(--ink);
+      transform: translate(-1px,-1px);
+      box-shadow: 2px 2px 0 var(--red-string);
+    }
+    .flag-result {
+      position: relative; z-index: 1;
+      font-family: 'Oswald', sans-serif;
+      font-size: 0.85rem; font-weight: 600;
+      letter-spacing: 2px; text-transform: uppercase;
+      padding: 0.6rem 1rem; margin-top: 0.8rem;
+      display: none;
+    }
+    .flag-result.correct {
+      background: rgba(45,90,39,0.1);
+      border: 1.5px solid var(--stamp-green);
+      color: var(--stamp-green);
+    }
+    .flag-result.wrong {
+      background: rgba(139,26,26,0.08);
+      border: 1.5px solid var(--stamp-red);
+      color: var(--stamp-red);
+    }
+
+    /* SIDEBAR */
+    .sidebar-card {
+      background: var(--paper);
+      padding: 1.5rem;
+      position: relative;
+      box-shadow: 4px 4px 0 var(--cork-dark);
+      margin-bottom: 1.5rem;
+    }
+    .sidebar-card::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: repeating-linear-gradient(transparent, transparent 26px, #c9b88a55 27px);
+      pointer-events: none;
+    }
+    .sidebar-title {
+      font-family: 'Special Elite', serif;
+      font-size: 1.1rem;
+      color: var(--ink);
+      border-bottom: 1.5px solid var(--ink);
+      padding-bottom: 0.4rem;
+      margin-bottom: 0.8rem;
+      position: relative; z-index: 1;
+    }
+    .sidebar-item {
+      font-size: 0.82rem;
+      color: var(--ink-faded);
+      padding: 0.3rem 0;
+      border-bottom: 1px dashed var(--paper-dark);
+      position: relative; z-index: 1;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .sidebar-pts {
+      font-family: 'Oswald', sans-serif;
+      font-weight: 600;
+      color: var(--stamp-green);
+      font-size: 0.85rem;
+    }
+
+    @keyframes stamp {
+      0% { transform: scale(2) rotate(-15deg); opacity: 0; }
+      60% { transform: scale(0.95) rotate(-3deg); opacity: 1; }
+      100% { transform: scale(1) rotate(-3deg); opacity: 1; }
+    }
+    .solved-stamp {
+      position: fixed; top: 50%; left: 50%;
+      transform: translate(-50%,-50%) scale(1) rotate(-3deg);
+      background: var(--stamp-green);
+      color: white;
+      font-family: 'Oswald', sans-serif;
+      font-size: 2.5rem;
+      font-weight: 900;
+      letter-spacing: 6px;
+      padding: 1rem 3rem;
+      border: 5px solid white;
+      z-index: 999;
+      animation: stamp 0.4s ease forwards;
+      pointer-events: none;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+
+<!-- SOLVED STAMP -->
+<div class="solved-stamp" id="solvedStamp">FLAG CAPTURED!</div>
+
+<!-- CHALLENGE MODAL -->
+<div class="modal-overlay" id="challModal">
+  <div class="chall-modal" id="challModalContent">
+    <div class="modal-tape-l"></div>
+    <button class="modal-close" onclick="closeChallModal()">✕</button>
+    <p class="modal-cat" id="mCat"></p>
+    <h2 class="modal-title" id="mTitle"></h2>
+    <div style="display:flex; gap:1rem; align-items:center; position:relative; z-index:1; margin-bottom:1rem;">
+      <span id="mDiff" class="diff-badge"></span>
+      <span id="mPts" style="font-family:'Oswald',sans-serif; font-weight:700; color:var(--red-string); font-size:1.1rem;"></span>
+      <span id="mFirst" style="font-family:'Courier Prime',monospace; font-size:0.75rem; color:var(--ink-faded);"></span>
+    </div>
+    <hr class="modal-divider"/>
+    <p class="modal-section-label">// Case Brief</p>
+    <p class="modal-body-text" id="mStory"></p>
+    <p class="modal-section-label">// Instructions</p>
+    <p class="modal-body-text" id="mInstructions"></p>
+    <div class="modal-hint" id="mHint"></div>
+    <hr class="modal-divider"/>
+    <p class="modal-section-label">// Submit Flag</p>
+    <div class="flag-input-wrap">
+      <input type="text" class="flag-input" id="flagInput" placeholder="FLAG{your_answer_here}" />
+      <button class="btn-submit-flag" onclick="submitFlag()">Submit</button>
+    </div>
+    <div class="flag-result" id="flagResult"></div>
+  </div>
+</div>
+
+<!-- NAVBAR -->
+<nav class="d-flex align-items-center justify-content-between">
+  <div class="d-flex align-items-center gap-3">
+    <a href="index.html" class="nav-brand">Edu<span>CTF</span></a>
+    <span class="nav-meta d-none d-sm-inline">// Case Files</span>
+  </div>
+  <button class="nav-toggle" onclick="toggleNav()">
+    <i class="bi bi-list"></i>
+  </button>
+  <div class="nav-links d-flex align-items-center" id="navLinks">
+    <a href="index.html">← Home</a>
+    <a href="admin.html">Leaderboard</a>
+    <span class="agent-tag" id="agentTag">AGENT: ghost_null</span>
+    <a href="index.html" style="margin-left:1rem; font-size:0.75rem; color:rgba(245,238,216,0.4); letter-spacing:1px; text-decoration:none;">[Logout]</a>
+  </div>
+</nav>
+
+<!-- BOARD -->
+<div class="container-fluid">
+  <!-- HEADER -->
+  <div class="board-header">
+    <h1 class="board-title">Active Case Files</h1>
+    <p class="board-sub">// Select a challenge to begin your investigation</p>
+  </div>
+
+  <div class="row g-0">
+    <!-- MAIN -->
+    <div class="col-lg-9">
+      <!-- PROGRESS -->
+      <div class="progress-strip">
+        <div style="position:relative;z-index:1;">
+          <p class="prog-label">Score</p>
+          <p class="prog-val" id="scoreDisplay">1,200 pts</p>
+        </div>
+        <div style="position:relative;z-index:1;">
+          <p class="prog-label">Solved</p>
+          <p class="prog-val" id="solvedDisplay">3 / 12</p>
+        </div>
+        <div class="prog-bar-wrap">
+          <div class="prog-bar-fill" id="progFill" style="width:25%"></div>
+        </div>
+        <div style="position:relative;z-index:1;">
+          <p class="prog-label">Rank</p>
+          <p class="prog-val">#4</p>
+        </div>
+      </div>
+
+      <!-- FILTERS -->
+      <div class="cat-filters">
+        <button class="cat-btn active" onclick="filterCat('all', this)">All</button>
+        <button class="cat-btn" onclick="filterCat('forensics', this)"><i class="bi bi-search"></i> Forensics</button>
+        <button class="cat-btn" onclick="filterCat('cryptography', this)"><i class="bi bi-lock-fill"></i> Cryptography</button>
+        <button class="cat-btn" onclick="filterCat('steganography', this)"><i class="bi bi-image-fill"></i> Steganography</button>
+        <button class="cat-btn" onclick="filterCat('web', this)"><i class="bi bi-globe2"></i> Web</button>
+        <button class="cat-btn" onclick="filterCat('reverse', this)"><i class="bi bi-cpu-fill"></i> Reverse Eng.</button>
+        <button class="cat-btn" onclick="filterCat('osint', this)"><i class="bi bi-eye-fill"></i> OSINT</button>
+        <button class="cat-btn" onclick="filterCat('misc', this)"><i class="bi bi-puzzle-fill"></i> Misc</button>
+      </div>
+
+      <!-- GRID -->
+      <div class="board-grid">
+        <div class="row g-4" id="challGrid"></div>
+      </div>
+    </div>
+
+    <!-- SIDEBAR -->
+    <div class="col-lg-3" style="position:relative; z-index:1; padding:1rem 1rem 3rem;">
+      <!-- Solved list -->
+      <div class="sidebar-card mt-4">
+        <p class="sidebar-title"><i class="bi bi-check2-circle" style="color:var(--stamp-green);"></i> &nbsp;My Solved Cases</p>
+        <div id="solvedList">
+          <div class="sidebar-item">
+            <span>Dead Drop Signal</span>
+            <span class="sidebar-pts">+100</span>
+          </div>
+          <div class="sidebar-item">
+            <span>Caesar's Ghost</span>
+            <span class="sidebar-pts">+100</span>
+          </div>
+          <div class="sidebar-item" style="border:none;">
+            <span>Hidden in Plain Sight</span>
+            <span class="sidebar-pts">+250</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Leaderboard mini -->
+      <div class="sidebar-card">
+        <p class="sidebar-title"><i class="bi bi-trophy-fill" style="color:var(--red-string);"></i> &nbsp;Top Agents</p>
+        <div class="sidebar-item"><span>🥇 ghost_null</span><span class="sidebar-pts">3,450</span></div>
+        <div class="sidebar-item"><span>🥈 xray_cmd</span><span class="sidebar-pts">3,100</span></div>
+        <div class="sidebar-item"><span>🥉 static_h4x</span><span class="sidebar-pts">2,850</span></div>
+        <div class="sidebar-item" style="border:none;"><span>4. b1n4ry_wolf</span><span class="sidebar-pts">2,400</span></div>
+        <div style="text-align:right;margin-top:0.8rem;position:relative;z-index:1;">
+          <a href="admin.html" style="font-size:0.75rem;color:var(--red-string);font-family:'Courier Prime',monospace;text-decoration:none;">Full standings →</a>
+        </div>
+      </div>
+
+      <!-- Timer -->
+      <div class="sidebar-card" style="text-align:center;">
+        <p class="sidebar-title" style="text-align:center;">⏱ Time Remaining</p>
+        <p style="font-family:'Special Elite',serif;font-size:2.5rem;color:var(--stamp-red);position:relative;z-index:1;" id="countdown">04:32:11</p>
+        <p style="font-size:0.72rem;color:var(--ink-faded);letter-spacing:2px;text-transform:uppercase;position:relative;z-index:1;">Competition ends 6:00 PM</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function toggleNav() {
+  document.getElementById('navLinks').classList.toggle('active');
+}
+const challenges = [
+  {
+    id:1, cat:'forensics', title:'Dead Drop Signal',
+    story:'An encrypted USB was found near the campus parking lot. Analysis reveals it contained a text file with several hex strings scattered across what looks like a log file. The suspect left one message behind.',
+    instructions:'You are given a hex-encoded string. Decode it to find the flag. The data is: 464c41477b68336c6c6f5f666f72656e736963737d',
+    hint:'Hint: Hex to ASCII. Every two hex characters = one letter.',
+    flag:'FLAG{h3llo_forensics}', diff:'easy', pts:100, firstBlood:false
+  },
+  {
+    id:2, cat:'cryptography', title:"Caesar's Ghost",
+    story:"A mysterious note was slipped under the lab door at midnight. The message reads: 'IOR{pdhvdu_flskhu_fudfnhg}'. Below it, scrawled in red: 'The old Roman knew how to hide.'",
+    instructions:'The flag has been Caesar-shifted. The message reads: IOR{pdhvdu_flskhu_fudfnhg}. What is the shift?',
+    hint:'Hint: The flag header is always FLAG{...}. Work backwards from there.',
+    flag:'FLAG{caesar_cipher_cracked}', diff:'easy', pts:100, firstBlood:true
+  },
+  {
+    id:3, cat:'steganography', title:'Hidden in Plain Sight',
+    story:'A suspect uploaded an image of a sunset to the school forum. Nothing unusual — until a junior analyst noticed the file size was unusually large. Something is buried inside the pixels.',
+    instructions:'An image has been provided (stego_sunset.png). Extract the hidden message. Use steghide or zsteg. The passphrase is: detective2026',
+    hint:'Hint: Try `steghide extract -sf stego_sunset.png -p detective2026`',
+    flag:'FLAG{pixels_hide_secrets}', diff:'medium', pts:250, firstBlood:false
+  },
+  {
+    id:4, cat:'web', title:'The Open Door',
+    story:'A vulnerable student portal was reported to the security team. The login page seems to accept almost anything. An attacker could bypass authentication entirely with the right input.',
+    instructions:'The login form at /login accepts username and password. Try to bypass authentication using a classic SQL injection payload. The flag is printed after successful bypass.',
+    hint:"Hint: Try username: admin'-- and any password.",
+    flag:'FLAG{sql_injection_101}', diff:'easy', pts:100, firstBlood:false
+  },
+  {
+    id:5, cat:'cryptography', title:'The Vigenère Vault',
+    story:'A journal was recovered from an abandoned server room. The pages are filled with scrambled text under the title "VAULT CONTENTS". The cover reads: key = SHADOW',
+    instructions:'Decrypt the following Vigenère cipher with key SHADOW:\nWPXSF{ivzsl_dpetpc_pcqseo}',
+    hint:'Hint: Use a Vigenère decoder online or write a script. The key is SHADOW.',
+    flag:'FLAG{multi_layer_decode}', diff:'medium', pts:250, firstBlood:false
+  },
+  {
+    id:6, cat:'forensics', title:'Memory Leak',
+    story:'A volatile memory dump was captured from a compromised machine during an incident. Somewhere in the 512MB dump, an analyst spotted a string that matches the flag format. Can you find it?',
+    instructions:'You are given memory.bin. Use strings and grep to locate the flag inside the binary dump.\nCommand: strings memory.bin | grep "FLAG{"',
+    hint:'Hint: The strings command extracts human-readable text from binary files.',
+    flag:'FLAG{memory_forensics_win}', diff:'medium', pts:250, firstBlood:true
+  },
+  {
+    id:7, cat:'steganography', title:'Morse in the Noise',
+    story:"A radio operator intercepted an audio file from a suspicious frequency. Among the static, a pattern emerges — short and long. Someone's been sending signals the old-fashioned way.",
+    instructions:'Listen to signal.wav. Transcribe the Morse code and decode it. The decoded message IS the flag content. Format it as FLAG{decoded_message}.',
+    hint:'Hint: .- / -... / -.-. → ABC. Use Audacity or an online Morse decoder.',
+    flag:'FLAG{morse_never_dies}', diff:'medium', pts:250, firstBlood:false
+  },
+  {
+    id:8, cat:'reverse', title:'Strings of Deception',
+    story:'A suspicious .exe was flagged by the antivirus. Analysts say it beacons out with a hardcoded credential. No source code was recovered — only the binary.',
+    instructions:'You are given suspect.exe. Use the `strings` command or a reverse engineering tool like Ghidra. Find the hardcoded flag embedded in the binary.',
+    hint:'Hint: Run `strings suspect.exe | grep FLAG` or use Ghidra to disassemble.',
+    flag:'FLAG{reverse_eng_basics}', diff:'hard', pts:500, firstBlood:false
+  },
+  {
+    id:9, cat:'osint', title:'The Ghost Profile',
+    story:'An anonymous tip led investigators to a social media handle: @n0_trac3_lef7. The account has no posts, no followers — but somewhere on the internet, this entity left a footprint.',
+    instructions:'Using only publicly available information, find out what email address is associated with the handle @n0_trac3_lef7 across platforms. The answer is the flag.',
+    hint:'Hint: Check GitHub, Pastebin, and archive.org for digital footprints.',
+    flag:'FLAG{osint_ghost_found}', diff:'hard', pts:500, firstBlood:false
+  },
+  {
+    id:10, cat:'misc', title:'QR Gone Wrong',
+    story:"A QR code was printed on a flyer and taped to the bulletin board. Scanning it shows a broken link — but the pixel pattern itself encodes more than it seems. Someone corrupted the header bytes intentionally.",
+    instructions:'You are given broken_qr.png. The PNG header is corrupted. Fix the first 8 bytes to the correct PNG magic bytes (89 50 4E 47 0D 0A 1A 0A) and decode the QR.',
+    hint:'Hint: Use a hex editor (HxD) to repair the PNG signature. Then scan with a QR reader.',
+    flag:'FLAG{qr_header_fixed}', diff:'medium', pts:250, firstBlood:false
+  },
+  {
+    id:11, cat:'cryptography', title:'Base of Operations',
+    story:'A coded communiqué was intercepted between two operatives. It appeared to be plain English at first glance, but running it through a basic decoder revealed layers underneath.',
+    instructions:'Decode this string — it has been encoded multiple times:\nWm14aFozMXdiMjlzWDJOdloyNXZjMmxv',
+    hint:'Hint: Try Base64 decoding more than once.',
+    flag:'FLAG{base_conversions_go}', diff:'easy', pts:100, firstBlood:false
+  },
+  {
+    id:12, cat:'web', title:'Cookie Monster',
+    story:'A restricted admin panel was discovered on a test server. The developer forgot to validate sessions server-side. Your cookie might be telling the server who you are — and you can lie.',
+    instructions:'Open the challenge URL in your browser. Inspect the cookies in DevTools. Modify the `role` cookie from `user` to `admin`. The flag will appear.',
+    hint:'Hint: Browser DevTools → Application → Cookies. Edit the value directly.',
+    flag:'FLAG{cookie_manipulation}', diff:'easy', pts:100, firstBlood:false
+  }
+];
+
+let solvedIds = new Set([1, 2, 3]);
+let score = 450;
+let activeChall = null;
+let currentFilter = 'all';
+
+function renderGrid(filter) {
+  const grid = document.getElementById('challGrid');
+  grid.innerHTML = '';
+  const filtered = filter === 'all' ? challenges : challenges.filter(c => c.cat === filter);
+  filtered.forEach(ch => {
+    const solved = solvedIds.has(ch.id);
+    const diffClass = ch.diff === 'easy' ? 'diff-easy' : ch.diff === 'medium' ? 'diff-medium' : 'diff-hard';
+    const col = document.createElement('div');
+    col.className = 'col-sm-6 col-xl-4';
+    col.innerHTML = `
+      <div class="chall-card${solved?' solved':''}" onclick="openChall(${ch.id})">
+        <div class="chall-pin"></div>
+        <p class="chall-cat"><i class="bi ${catIcon(ch.cat)}"></i> &nbsp;${ch.cat.toUpperCase()}</p>
+        <h3 class="chall-title">${ch.title}</h3>
+        <p class="chall-story">${ch.story.substring(0,120)}...</p>
+        <div class="chall-footer">
+          <span class="diff-badge ${diffClass}">${ch.diff}</span>
+          <span class="chall-pts">${ch.pts} pts</span>
+        </div>
+        ${ch.firstBlood ? '<div style="position:absolute;bottom:10px;left:50%;transform:translateX(-50%);font-size:0.6rem;color:var(--stamp-red);font-family:Oswald,sans-serif;letter-spacing:2px;z-index:5;">🩸 FIRST BLOOD +50</div>' : ''}
+      </div>`;
+    grid.appendChild(col);
+  });
+}
+
+function catIcon(cat) {
+  const m = {forensics:'bi-search',cryptography:'bi-lock-fill',steganography:'bi-image-fill',web:'bi-globe2',reverse:'bi-cpu-fill',osint:'bi-eye-fill',misc:'bi-puzzle-fill'};
+  return m[cat] || 'bi-question-circle';
+}
+
+function filterCat(cat, btn) {
+  currentFilter = cat;
+  document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderGrid(cat);
+}
+
+function openChall(id) {
+  activeChall = challenges.find(c => c.id === id);
+  document.getElementById('mCat').textContent = '// ' + activeChall.cat.toUpperCase();
+  document.getElementById('mTitle').textContent = activeChall.title;
+  const diffClass = activeChall.diff === 'easy' ? 'diff-easy' : activeChall.diff === 'medium' ? 'diff-medium' : 'diff-hard';
+  document.getElementById('mDiff').className = 'diff-badge ' + diffClass;
+  document.getElementById('mDiff').textContent = activeChall.diff.toUpperCase();
+  document.getElementById('mPts').textContent = activeChall.pts + ' pts';
+  document.getElementById('mFirst').textContent = activeChall.firstBlood ? '🩸 First Blood Claimed' : '🩸 First Blood Available (+50 pts)';
+  document.getElementById('mStory').textContent = activeChall.story;
+  document.getElementById('mInstructions').textContent = activeChall.instructions;
+  document.getElementById('mHint').textContent = activeChall.hint;
+  document.getElementById('flagInput').value = '';
+  const res = document.getElementById('flagResult');
+  res.style.display = 'none'; res.className = 'flag-result';
+  document.getElementById('challModal').classList.add('active');
+}
+
+function closeChallModal() {
+  document.getElementById('challModal').classList.remove('active');
+  activeChall = null;
+}
+
+function submitFlag() {
+  if (!activeChall) return;
+  const val = document.getElementById('flagInput').value.trim();
+  const res = document.getElementById('flagResult');
+  if (val === activeChall.flag) {
+    res.textContent = '✓ FLAG CAPTURED! +' + activeChall.pts + ' points';
+    res.className = 'flag-result correct';
+    res.style.display = 'block';
+    if (!solvedIds.has(activeChall.id)) {
+      solvedIds.add(activeChall.id);
+      score += activeChall.pts;
+      updateStats();
+      renderGrid(currentFilter);
+      setTimeout(() => {
+        closeChallModal();
+        showSolvedStamp();
+      }, 1200);
+    }
+  } else {
+    res.textContent = '✗ Wrong flag. Keep investigating.';
+    res.className = 'flag-result wrong';
+    res.style.display = 'block';
+  }
+}
+
+function showSolvedStamp() {
+  const s = document.getElementById('solvedStamp');
+  s.style.display = 'block';
+  setTimeout(() => { s.style.display = 'none'; }, 1800);
+}
+
+function updateStats() {
+  document.getElementById('scoreDisplay').textContent = score.toLocaleString() + ' pts';
+  document.getElementById('solvedDisplay').textContent = solvedIds.size + ' / ' + challenges.length;
+  document.getElementById('progFill').style.width = (solvedIds.size / challenges.length * 100) + '%';
+}
+
+// Countdown timer
+function startTimer() {
+  let total = 4*3600 + 32*60 + 11;
+  setInterval(() => {
+    if (total <= 0) return;
+    total--;
+    const h = String(Math.floor(total/3600)).padStart(2,'0');
+    const m = String(Math.floor((total%3600)/60)).padStart(2,'0');
+    const s = String(total%60).padStart(2,'0');
+    document.getElementById('countdown').textContent = `${h}:${m}:${s}`;
+  }, 1000);
+}
+
+document.getElementById('challModal').addEventListener('click', function(e) {
+  if (e.target === this) closeChallModal();
+});
+
+renderGrid('all');
+updateStats();
+startTimer();
+</script>
+</body>
+</html>
