@@ -84,13 +84,13 @@
         position: absolute;
         top: 100%; left: 0; right: 0;
         background: #0d0804;
-        padding: 1rem;
+        padding: 1.5rem;
         border-bottom: 3px solid var(--red-string);
         align-items: flex-start !important;
-        z-index: 200;
+        z-index: 2000;
       }
       .nav-links.active { display: flex !important; }
-      .nav-links a { margin: 0.5rem 0 !important; font-size: 0.9rem; }
+      .nav-links a { margin: 0.8rem 0 !important; font-size: 1rem; margin-left: 0 !important; }
       
       .admin-wrap { flex-direction: column; }
       .admin-sidebar {
@@ -98,27 +98,31 @@
         border-right: none;
         border-bottom: 1px solid rgba(139,26,26,0.4);
         padding: 1rem 0;
-        display: none; /* Hidden by default on mobile, toggleable */
+        display: none;
+        background: #0d0804;
       }
       .admin-sidebar.active { display: block; }
-      .admin-main { padding: 1.5rem 1rem; }
+      .admin-main { padding: 1.5rem 0.75rem; width: 100%; overflow-x: hidden; }
       
-      .paper-card { padding: 1rem; }
-      .stat-card { margin-bottom: 1rem; }
+      .stat-card { margin-bottom: 1rem; padding: 1.2rem; }
+      .stat-value { font-size: 2rem; }
       
-      .podium { gap: 0.5rem; }
-      .podium-block { width: 70px; }
-      .podium-block.first { height: 100px; }
-      .podium-block.second { height: 80px; }
-      .podium-block.third { height: 60px; }
+      .podium { gap: 0.4rem; margin: 2rem 0; flex-wrap: wrap; justify-content: center; }
+      .podium-step { flex: 1 1 30%; min-width: 80px; }
+      .podium-block { width: 100%; }
       
-      .paper-card, .admin-sidebar, .stat-card {
-        overflow-x: auto;
-      }
+      .paper-card { padding: 1rem; margin-bottom: 1.5rem; overflow-x: auto; -webkit-overflow-scrolling: touch; }
       
       .lb-table, .dark-table {
-        min-width: 600px; /* Force scroll on small screens */
+        min-width: 700px; /* Ensure table is readable via scroll */
       }
+      
+      .search-bar { width: 100%; margin-bottom: 1rem; }
+      .sidebar-nav-item { padding: 0.8rem 1.2rem; }
+      
+      /* Avoid overlaps in grid */
+      .row { margin-left: 0; margin-right: 0; }
+      .col-sm-6, .col-lg-3, .col-lg-5, .col-lg-4 { padding-left: 0.5rem; padding-right: 0.5rem; }
     }
 
     /* SIDEBAR */
