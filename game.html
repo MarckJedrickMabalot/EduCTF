@@ -88,31 +88,58 @@
         position: absolute;
         top: 100%; left: 0; right: 0;
         background: var(--ink);
-        padding: 1rem;
+        padding: 1.5rem;
         border-bottom: 3px solid var(--red-string);
         align-items: flex-start !important;
+        z-index: 1000;
       }
       .nav-links.active { display: flex !important; }
-      .nav-links a { margin: 0.5rem 0 !important; font-size: 0.9rem; }
-      .agent-tag { margin: 0.5rem 0 !important; }
+      .nav-links a { margin: 0.8rem 0 !important; font-size: 1rem; margin-left: 0 !important; }
+      .agent-tag { margin: 0.8rem 0 !important; margin-left: 0 !important; width: 100%; text-align: center; }
       
       .progress-strip {
         flex-direction: column;
         align-items: stretch !important;
-        gap: 0.8rem !important;
+        gap: 1rem !important;
+        margin: 0 0.5rem 1.5rem;
+        padding: 1rem;
       }
-      .prog-bar-wrap { height: 6px; }
-       .board-title { font-size: 1.8rem; }
-       
-       .chall-modal {
-         padding: 1.5rem !important;
-       }
-       .modal-title { font-size: 1.5rem !important; }
-       .flag-input-wrap { flex-direction: column; }
-       .btn-submit-flag { width: 100%; }
-       
-       .chall-card { transform: none !important; }
-     }
+      .prog-bar-wrap { height: 8px; margin: 0.5rem 0; }
+      .board-title { font-size: 1.8rem; }
+      .board-header { padding: 1.5rem 0.5rem; }
+      
+      .cat-filters {
+        margin: 0 0.5rem 1.5rem;
+        justify-content: center;
+      }
+      .cat-btn {
+        flex: 1 1 calc(50% - 0.5rem);
+        text-align: center;
+        font-size: 0.7rem;
+        padding: 0.5rem 0.2rem;
+      }
+      
+      .chall-modal {
+        padding: 1.5rem !important;
+        width: 95vw;
+        max-height: 85vh;
+      }
+      .modal-title { font-size: 1.5rem !important; }
+      .flag-input-wrap { flex-direction: column; gap: 0.8rem; }
+      .btn-submit-flag { width: 100%; padding: 0.8rem; }
+      
+      .chall-card { 
+        transform: none !important; 
+        margin-bottom: 0.5rem;
+      }
+      .chall-card:hover { transform: none !important; }
+      
+      .sidebar-card { margin: 0 0.5rem 1rem; }
+      
+      /* Fix container overflow */
+      .container-fluid { padding-left: 0.5rem; padding-right: 0.5rem; overflow-x: hidden; }
+      .row { margin-left: 0; margin-right: 0; }
+    }
 
     /* BOARD HEADER */
     .board-header {
